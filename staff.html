@@ -91,6 +91,13 @@
   }
   .staff-option:active{ background: var(--red); border-color:var(--red); }
 
+  .pin-input{
+    width:100%; padding:14px; text-align:center; font-family:'Space Mono', monospace; font-size:22px;
+    letter-spacing:0.3em; background:rgba(237,227,204,0.08); color:var(--paper);
+    border:1px solid rgba(237,227,204,0.25); border-radius:6px;
+  }
+  .pin-input::placeholder{ color:rgba(237,227,204,0.35); letter-spacing:0.02em; font-family:'Noto Sans TC',sans-serif; font-size:13px; }
+
   .search-row{ display:flex; gap:8px; padding-bottom:12px; }
   .search-row input{
     flex:1; padding:10px 12px; border-radius:4px; border:1px solid rgba(237,227,204,0.25);
@@ -562,59 +569,97 @@ function renderQuickSwitchList(mode){
   document.getElementById('logoutPickBtn').addEventListener('click', ()=> renderQuickSwitchList('logout-pick'));
 }
 
+/* Inline (non-native) PIN entry used both for first-time setup and quick-switch unlock. */
+function renderPinSetupInline(staff){
+  const modalBox = document.querySelector('.login-box');
+  modalBox.innerHTML = `
+    <div class="login-title">設定登入密碼</div>
+    <div class="login-sub">首次於本裝置登入，請為 ${staff.name} 設定 4 位數登入密碼（供之後快速切換帳號使用）。也可以先跳過，但需於 3 天內完成設定，逾期未設定將須重新驗證身份。</div>
+    <input type="tel" inputmode="numeric" maxlength="4" id="pinSetupInput1" placeholder="輸入 4 位數密碼" class="pin-input">
+    <input type="tel" inputmode="numeric" maxlength="4" id="pinSetupInput2" placeholder="再次輸入以確認" class="pin-input" style="margin-top:8px;">
+    <div id="pinSetupError" class="login-sub" style="color:#ff8a75;display:none;margin-top:6px;margin-bottom:0;"></div>
+    <button class="staff-option" id="pinSetupConfirmBtn" style="justify-content:center;margin-top:14px;background:var(--red);border-color:var(--red);">確認設定</button>
+    <button class="staff-option" id="pinSetupSkipBtn" style="justify-content:center;border-style:dashed;">先跳過</button>
+  `;
+  document.getElementById('pinSetupConfirmBtn').addEventListener('click', ()=>{
+    const p1 = document.getElementById('pinSetupInput1').value;
+    const p2 = document.getElementById('pinSetupInput2').value;
+    const errEl = document.getElementById('pinSetupError');
+    if(!/^\d{4}$/.test(p1)){ errEl.textContent='密碼需為 4 位數字'; errEl.style.display='block'; return; }
+    if(p1 !== p2){ errEl.textContent='兩次密碼不一致'; errEl.style.display='block'; return; }
+    staff.pin = p1;
+    completeDeviceLogin(staff);
+  });
+  document.getElementById('pinSetupSkipBtn').addEventListener('click', ()=> completeDeviceLogin(staff));
+}
+
 function promptSwitchPin(staff){
+  const modalBox = document.querySelector('.login-box');
+
   if(!staff.pin){
     const withinGrace = staff.deviceAddedAt && (Date.now() - staff.deviceAddedAt) < GRACE_PERIOD_MS;
-    if(withinGrace){
-      const pin = window.prompt(`${staff.name} 尚未設定密碼，請現在設定 4 位數登入密碼：`);
-      if(!pin || !/^\d{4}$/.test(pin)){ alert('密碼需為 4 位數字'); return; }
-      const confirmPin = window.prompt('請再次輸入密碼以確認：');
-      if(confirmPin !== pin){ alert('兩次密碼不一致'); return; }
-      staff.pin = pin;
+    if(withinGrace){ renderPinSetupInline(staff); return; }
+    modalBox.innerHTML = `
+      <div class="login-title">需重新驗證</div>
+      <div class="login-sub">${staff.name} 上機已超過 3 天未設定密碼，為帳戶安全須重新以登入方式驗證身份。</div>
+      <button class="staff-option" id="reverifyBtn" style="justify-content:center;">確定</button>
+    `;
+    document.getElementById('reverifyBtn').addEventListener('click', ()=>{ removeFromDevice(staff, false); renderMethodChoice(); });
+    return;
+  }
+
+  modalBox.innerHTML = `
+    <div class="login-title">${staff.name}</div>
+    <div class="login-sub">請輸入登入密碼</div>
+    <input type="tel" inputmode="numeric" maxlength="4" id="switchPinInput" placeholder="密碼" class="pin-input">
+    <div id="switchPinError" class="login-sub" style="color:#ff8a75;display:none;margin-top:6px;margin-bottom:0;"></div>
+    <button class="staff-option" id="switchPinConfirmBtn" style="justify-content:center;margin-top:14px;background:var(--red);border-color:var(--red);">確認</button>
+    <button class="staff-option" id="switchPinBackBtn" style="justify-content:center;border-style:dashed;">← 返回</button>
+  `;
+  const pinInput = document.getElementById('switchPinInput');
+  pinInput.focus();
+  document.getElementById('switchPinBackBtn').addEventListener('click', ()=> renderQuickSwitchList('switch'));
+
+  function trySubmit(){
+    const pin = pinInput.value;
+    const errEl = document.getElementById('switchPinError');
+    if(pin === staff.pin){
+      wrongPinAttempts[staff.id] = 0;
       currentStaff = staff;
       document.getElementById('currentStaffName').textContent = staff.name;
       document.getElementById('loginModal').classList.remove('show');
       resetIdleTimer();
       renderList();
-    } else {
-      alert(`${staff.name} 上機已超過3天未設定密碼，為帳戶安全須重新以登入方式驗證身份`);
-      removeFromDevice(staff, false);
-      renderMethodChoice();
+      return;
     }
-    return;
+    wrongPinAttempts[staff.id] = (wrongPinAttempts[staff.id]||0) + 1;
+    pinFailureLog.push({ staff: staff.name, at: Date.now() }); // stub: production writes to Sheet log worksheet
+    if(wrongPinAttempts[staff.id] >= 3){
+      removeFromDevice(staff, false);
+      wrongPinAttempts[staff.id] = 0;
+      const mb = document.querySelector('.login-box');
+      mb.innerHTML = `
+        <div class="login-title">帳戶已鎖定</div>
+        <div class="login-sub">為帳戶安全，${staff.name} 帳號已被強制登出，請重新登入。</div>
+        <button class="staff-option" id="lockedOkBtn" style="justify-content:center;">確定</button>
+      `;
+      document.getElementById('lockedOkBtn').addEventListener('click', renderMethodChoice);
+    } else {
+      errEl.textContent = `密碼錯誤，還有 ${3 - wrongPinAttempts[staff.id]} 次機會`;
+      errEl.style.display = 'block';
+      pinInput.value = '';
+      pinInput.focus();
+    }
   }
-
-  const pin = window.prompt(`請輸入 ${staff.name} 的登入密碼：`);
-  if(pin === null) return; // cancelled, stay on list
-  if(pin === staff.pin){
-    wrongPinAttempts[staff.id] = 0;
-    currentStaff = staff;
-    document.getElementById('currentStaffName').textContent = staff.name;
-    document.getElementById('loginModal').classList.remove('show');
-    resetIdleTimer();
-    renderList();
-    return;
-  }
-  wrongPinAttempts[staff.id] = (wrongPinAttempts[staff.id]||0) + 1;
-  pinFailureLog.push({ staff: staff.name, at: Date.now() }); // stub: production writes to Sheet log worksheet
-  if(wrongPinAttempts[staff.id] >= 3){
-    removeFromDevice(staff, false);
-    wrongPinAttempts[staff.id] = 0;
-    alert(`為帳戶安全，${staff.name} 帳號已被強制登出，請重新登入。`);
-    renderMethodChoice(); // fall back to full login (shows the shared-device code screen if enabled)
-  } else {
-    alert(`密碼錯誤，還有 ${3 - wrongPinAttempts[staff.id]} 次機會`);
-  }
+  document.getElementById('switchPinConfirmBtn').addEventListener('click', trySubmit);
+  pinInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') trySubmit(); });
 }
 
-function removeFromDevice(staff, askClock){
+function removeFromDevice(staff, isManualLogout){
   deviceLoggedInList = deviceLoggedInList.filter(s=>s.id!==staff.id);
-  if(askClock){
-    const doClock = confirm(`${staff.name}，要進行「下班打卡」嗎？`);
-    if(doClock){
-      attendanceLog.push({ staff: staff.name, action:'out', at: Date.now() });
-      showToastSafe(`${staff.name} 已下班打卡 ${fmtTime(Date.now())}`);
-    }
+  if(isManualLogout){
+    attendanceLog.push({ staff: staff.name, action:'out', at: Date.now() });
+    showToastSafe(`${staff.name} 已登出（自動下班打卡 ${fmtTime(Date.now())}）`);
   }
   if(currentStaff && currentStaff.id === staff.id){
     currentStaff = null;
@@ -673,57 +718,58 @@ function showPersonalLoginFlow(){
 function showSharedLoginFlow(){
   const code = String(1000 + Math.floor(Math.random()*9000));
   const body = document.getElementById('loginMethodBody');
+  const candidates = staffList.filter(s=>s.status==='active' && !deviceLoggedInList.find(d=>d.id===s.id));
   body.innerHTML = `
     <div class="login-sub" style="margin-bottom:6px;">請在 LINE Bot 中選擇「登入公務機」並輸入以下登入碼：</div>
     <div style="text-align:center;font-family:'Space Mono',monospace;font-size:36px;font-weight:700;color:var(--paper);letter-spacing:0.15em;margin:12px 0;">${code}</div>
-    <div class="login-sub" style="margin-bottom:14px;">登入碼每次產生皆不同，僅限本次登入使用</div>
-    <button class="staff-option" id="checkLoginStatusBtn" style="justify-content:center;background:var(--red);border-color:var(--red);">🔄 檢查登入情形</button>
+    <div class="login-sub" style="margin-bottom:10px;">登入碼每次產生皆不同，僅限本次登入使用</div>
+    <div class="login-sub" style="margin-bottom:6px;">（展示用）請選擇已在 LINE 確認登入碼的員工：</div>
+    ${candidates.map(s=>`<button class="staff-option" data-staff="${s.id}">${s.name}</button>`).join('')}
   `;
-  document.getElementById('checkLoginStatusBtn').addEventListener('click', ()=>{
-    const name = window.prompt('（模擬 LINE Bot 端）已輸入登入碼的員工姓名，尚未有人輸入請留空：');
-    if(name === null) return;
-    if(!name.trim()){ alert('尚未偵測到有人輸入登入碼，請稍後再試一次'); return; }
-    let staff = staffList.find(s=>s.name===name.trim());
-    if(!staff){ alert('查無此員工，請先於「個人手機登入」完成 LINE 申請'); return; }
-    if(staff.status==='pending'){ alert(`${staff.name} 的申請尚未經主管審核通過，暫時無法登入`); return; }
-    onIdentifiedForDeviceLogin(staff);
+  body.querySelectorAll('.staff-option[data-staff]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const staff = staffList.find(s=>s.id===btn.getAttribute('data-staff'));
+      onIdentifiedForDeviceLogin(staff);
+    });
   });
 }
 
 function registerNewStaff(){
-  if(!confirm('新員工需先於 LINE Bot 完成資料填寫，是否已在 LINE Bot 完成申請？（此為模擬流程）')) return;
-  const name = window.prompt('請輸入 LINE Bot 申請時填寫的姓名：');
-  if(!name) return;
-  const newStaff = { id:'s'+(staffList.length+1), name, role:'staff', pin:null, status:'pending', deviceAddedAt:null };
-  staffList.push(newStaff);
-  alert(`已收到「${name}」的申請，需等待主管審核通過後才能登入裝置`);
-  updatePendingBadge();
-  showLockScreen();
+  const modalBox = document.querySelector('.login-box');
+  modalBox.innerHTML = `
+    <div class="login-title">新增員工</div>
+    <div class="login-sub">請輸入 LINE Bot 申請時填寫的姓名：</div>
+    <input type="text" id="registerNameInput" placeholder="姓名" class="pin-input" style="text-align:left;font-size:15px;letter-spacing:0;font-family:'Noto Sans TC',sans-serif;">
+    <button class="staff-option" id="registerConfirmBtn" style="justify-content:center;margin-top:14px;background:var(--red);border-color:var(--red);">送出申請</button>
+    <button class="staff-option" id="registerBackBtn" style="justify-content:center;border-style:dashed;">← 返回</button>
+  `;
+  document.getElementById('registerConfirmBtn').addEventListener('click', ()=>{
+    const name = document.getElementById('registerNameInput').value.trim();
+    if(!name) return;
+    const newStaff = { id:'s'+(staffList.length+1), name, role:'staff', pin:null, status:'pending', deviceAddedAt:null };
+    staffList.push(newStaff);
+    updatePendingBadge();
+    modalBox.innerHTML = `
+      <div class="login-title">已送出申請</div>
+      <div class="login-sub">「${name}」需等待主管審核通過後才能登入裝置</div>
+      <button class="staff-option" id="registerDoneBtn" style="justify-content:center;">確定</button>
+    `;
+    document.getElementById('registerDoneBtn').addEventListener('click', showLockScreen);
+  });
+  document.getElementById('registerBackBtn').addEventListener('click', renderMethodChoice);
 }
 
 function onIdentifiedForDeviceLogin(staff){
   if(!staff.pin){
-    const wantsSetup = confirm(`是否要現在為 ${staff.name} 設定 4 位數登入密碼？\n\n（用於之後快速切換帳號；可先跳過，但需於 3 天內完成設定，逾期未設定將須重新以登入方式驗證身份）`);
-    if(wantsSetup){
-      const pin = window.prompt('請設定 4 位數登入密碼：');
-      if(pin && /^\d{4}$/.test(pin)){
-        const confirmPin = window.prompt('請再次輸入密碼以確認：');
-        if(confirmPin === pin) staff.pin = pin;
-        else alert('兩次密碼不一致，可於 3 天內再設定');
-      } else if(pin !== null){
-        alert('密碼需為 4 位數字，可於 3 天內再設定');
-      }
-    }
+    renderPinSetupInline(staff);
+  } else {
+    completeDeviceLogin(staff);
   }
-  completeDeviceLogin(staff);
 }
 
 function completeDeviceLogin(staff){
-  const doClock = confirm(`${staff.name}，要進行「上班打卡」嗎？`);
-  if(doClock){
-    attendanceLog.push({ staff: staff.name, action:'in', at: Date.now() });
-    showToastSafe(`${staff.name} 已上班打卡 ${fmtTime(Date.now())}`);
-  }
+  attendanceLog.push({ staff: staff.name, action:'in', at: Date.now() }); // stub for future attendance feature
+  showToastSafe(`${staff.name} 已登入（自動上班打卡 ${fmtTime(Date.now())}）`);
   if(!staff.deviceAddedAt) staff.deviceAddedAt = Date.now();
   if(!deviceLoggedInList.find(s=>s.id===staff.id)) deviceLoggedInList.push(staff);
   currentStaff = staff;
@@ -744,30 +790,8 @@ updatePendingBadge();
 showLockScreen();
 
 /* ---------------- LOGIN METHOD SETTINGS (manager only) ---------------- */
-function openLoginSettings(){
-  if(!currentStaff || currentStaff.role !== 'manager'){ alert('僅主管以上權限可調整登入方式設定'); return; }
-
-  const pending = staffList.filter(s=>s.status==='pending');
-  if(pending.length){
-    pending.slice().forEach(s=>{
-      const approve = confirm(`員工申請審核\n\n姓名：${s.name}\n\n是否核准上機權限？（確定=核准，取消=駁回）`);
-      if(approve){
-        s.status = 'active';
-        showToastSafe(`已核准 ${s.name} 的上機申請`);
-      } else {
-        staffList.splice(staffList.indexOf(s), 1);
-        showToastSafe(`已駁回 ${s.name} 的申請`);
-      }
-    });
-    updatePendingBadge();
-  }
-
-  const personal = confirm('是否啟用「個人手機登入」？（確定=啟用，取消=停用）');
-  const shared = confirm('是否啟用「公務機登入碼」？（確定=啟用，取消=停用）');
-  if(!personal && !shared){ alert('至少需啟用一種登入方式，設定未變更'); return; }
-  loginSettings = { personal, shared };
-  showToastSafe('登入方式設定已更新');
-}
+/* Login-method settings & staff approval now live only in manager.html — see the gear icon there. */
+function openLoginSettings(){ /* no-op on this page */ }
 
 function updatePendingBadge(){
   const badge = document.getElementById('pendingBadge');
@@ -1067,14 +1091,22 @@ function bindActionButtons(){
 
 function bindStaffNotes(){
   document.querySelectorAll('.staff-note').forEach(el=>{
-    el.addEventListener('click', ()=>{
+    el.addEventListener('click', function handler(){
+      if(el.classList.contains('editing')) return;
       const code = el.getAttribute('data-code');
       const order = orders.find(o=>o.code===code);
       if(!order) return;
-      const note = window.prompt('備註內容（例如：不吃冰、常坐窗邊、對堅果過敏）：', order.staffNote || '');
-      if(note === null) return;
-      order.staffNote = note.trim() || null;
-      renderList();
+      el.classList.add('editing');
+      const original = el.innerHTML;
+      el.innerHTML = `<input type="text" value="${(order.staffNote||'').replace(/"/g,'&quot;')}" placeholder="備註（例如：不吃冰、對堅果過敏）" style="border:none;background:transparent;font-size:11px;color:var(--ink);width:150px;outline:none;">`;
+      const input = el.querySelector('input');
+      input.focus();
+      function save(){
+        order.staffNote = input.value.trim() || null;
+        renderList();
+      }
+      input.addEventListener('blur', save);
+      input.addEventListener('keydown', (e)=>{ if(e.key==='Enter') input.blur(); });
     });
   });
 }
