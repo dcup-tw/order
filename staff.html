@@ -335,6 +335,7 @@
 </div>
 
 <script>
+let idleTimer; // declared early so showLockScreen() can safely clearTimeout() it during initial page load
 /* ---------------- DATA ---------------- */
 const sampleItemPool = [
   {name:'紅茶', size:'大杯', sweet:'半糖', ice:'少冰', price:70},
@@ -807,7 +808,6 @@ function updatePendingBadge(){
    Locking does NOT remove anyone from deviceLoggedInList — it just clears the active session
    and shows the quick-switch list so any already-logged-in person can unlock with their PIN. */
 const IDLE_LIMIT_MS = 5 * 60 * 1000;
-let idleTimer;
 function lockScreen(reason){
   if(!currentStaff) return;
   showToastSafe(reason || '畫面已鎖定');
