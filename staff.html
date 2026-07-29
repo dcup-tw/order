@@ -280,9 +280,6 @@
       <input type="text" id="searchInput" placeholder="輸入後3碼查今日訂單，如 014" class="mono">
       <button id="searchBtn">查詢</button>
     </div>
-    <div class="search-row" style="padding-bottom:12px;">
-      <button id="assistOrderBtn" style="flex:1;padding:9px;background:transparent;border:1px dashed rgba(237,227,204,0.4);color:rgba(237,227,204,0.85);border-radius:4px;font-size:12.5px;font-weight:600;cursor:pointer;">👤 員工代點</button>
-    </div>
     <div class="tabs" id="tabs">
       <div class="tab active" data-tab="attention">
         待處理<span class="tab-badge" id="badgeAttention" style="display:none">0</span>
@@ -328,21 +325,6 @@
     </div>
   </div>
 
-  <div class="overlay" id="assistOverlay">
-    <div class="sheet">
-      <div class="sheet-handle"></div>
-      <div class="sheet-close-row"><button class="sheet-close" id="assistClose">✕</button></div>
-      <div style="padding:0 16px 24px;">
-        <div style="font-size:15px;font-weight:700;margin-bottom:10px;">員工代點</div>
-        <div class="search-row" style="padding-bottom:0;">
-          <input type="text" id="assistNameInput" placeholder="輸入顧客姓名，如 王大明" style="flex:1;padding:10px 12px;border:1px solid var(--line);border-radius:4px;font-size:14px;">
-          <button id="assistSearchBtn" style="padding:10px 16px;background:var(--ink);color:var(--paper);border:none;border-radius:4px;font-size:13px;font-weight:700;cursor:pointer;">搜尋</button>
-        </div>
-        <div id="assistResult" style="margin-top:14px;"></div>
-      </div>
-    </div>
-  </div>
-
 </div>
 
 <script>
@@ -369,17 +351,6 @@ const namePool = [
   {name:'李佳蓉', title:'小姐', source:'line'},
 ];
 
-/* mock "known customer" order history, keyed by LINE display name or custom name */
-const customerOrderHistory = {
-  '王大明': [
-    {name:'紅茶', size:'大杯', sweet:'半糖', ice:'少冰', price:70, qty:2},
-    {name:'美式', size:null, sweet:'—', ice:'熱飲', price:70, qty:1},
-  ],
-  '陳雅婷': [
-    {name:'珍珠奶茶', size:'中杯', sweet:'正常', ice:'去冰', price:70, qty:1},
-    {name:'桂花烏龍', size:'中杯', sweet:'微糖', ice:'正常冰', price:100, qty:1},
-  ],
-};
 
 /* Order numbering: 內用 000-299 / 外帶 300-599 / 外送 600-899, reset daily */
 let seqCounters = { dinein: -1, takeout: 299, delivery: 599 };
@@ -1232,120 +1203,6 @@ document.getElementById('historyOverlay').addEventListener('click', (e)=>{ if(e.
 document.getElementById('demoAddDinein').addEventListener('click', ()=>{ const o=makeOrder('dinein'); showToast(`新訂單 ${o.code}（內用）`); renderList(); });
 document.getElementById('demoAddTakeout').addEventListener('click', ()=>{ const o=makeOrder('takeout'); showToast(`新訂單 ${o.code}（外帶）`); renderList(); });
 document.getElementById('demoAddDelivery').addEventListener('click', ()=>{ const o=makeOrder('delivery'); showToast(`新訂單 ${o.code}（外送，待確認）`); renderList(); });
-
-/* ---------------- Staff-assisted ordering ---------------- */
-document.getElementById('assistOrderBtn').addEventListener('click', ()=>{
-  document.getElementById('assistNameInput').value = '';
-  document.getElementById('assistResult').innerHTML = '';
-  document.getElementById('assistOverlay').classList.add('show');
-});
-document.getElementById('assistClose').addEventListener('click', ()=> document.getElementById('assistOverlay').classList.remove('show'));
-document.getElementById('assistOverlay').addEventListener('click', (e)=>{ if(e.target.id==='assistOverlay') e.currentTarget.classList.remove('show'); });
-
-function typeSelectorHtml(){
-  return `
-    <div class="field" style="margin-top:12px;">
-      <label class="field-label" style="font-size:11px;color:var(--ink-soft);display:block;margin-bottom:4px;">用餐方式</label>
-      <select id="assistTypeSelect" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:4px;">
-        <option value="dinein">內用</option>
-        <option value="takeout">外帶</option>
-        <option value="delivery">外送</option>
-      </select>
-    </div>
-    <div id="assistDineinFields" style="display:flex;gap:8px;">
-      <div style="flex:1;">
-        <label class="field-label" style="font-size:11px;color:var(--ink-soft);display:block;margin:8px 0 4px;">桌次</label>
-        <input type="number" id="assistTable" min="1" max="20" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:4px;">
-      </div>
-      <div style="flex:1;">
-        <label class="field-label" style="font-size:11px;color:var(--ink-soft);display:block;margin:8px 0 4px;">人數</label>
-        <input type="number" id="assistHeadcount" min="1" max="10" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:4px;">
-      </div>
-    </div>`;
-}
-function bindTypeSelectorToggle(){
-  const sel = document.getElementById('assistTypeSelect');
-  const dineinFields = document.getElementById('assistDineinFields');
-  const toggle = ()=> dineinFields.style.display = sel.value==='dinein' ? 'flex' : 'none';
-  sel.addEventListener('change', toggle);
-  toggle();
-}
-
-document.getElementById('assistSearchBtn').addEventListener('click', ()=>{
-  const name = document.getElementById('assistNameInput').value.trim();
-  const resultWrap = document.getElementById('assistResult');
-  if(!name) return;
-
-  const history = customerOrderHistory[name];
-  if(history){
-    resultWrap.innerHTML = `
-      <div class="notice" style="border-left-color:var(--green);">找到常客資料，以下為上次訂購內容：</div>
-      <table class="item-table" style="margin-top:8px;">
-        <thead><tr><th>品名</th><th>杯型</th><th>數量</th><th>金額</th></tr></thead>
-        <tbody>${history.map((it,idx)=>`
-          <tr class="${idx%2===1?'zebra':''}"><td>${it.name}</td><td>${it.size||'—'}</td><td>${it.qty}</td><td>$${it.price*it.qty}</td></tr>
-        `).join('')}</tbody>
-      </table>
-      ${typeSelectorHtml()}
-      <button id="assistCreateBtn" class="action-btn primary" style="width:100%;margin-top:14px;">建立訂單（帶入上次品項）</button>
-    `;
-    bindTypeSelectorToggle();
-    document.getElementById('assistCreateBtn').addEventListener('click', ()=>{
-      const items = history.map(it=>({...it, rowId:'r'+Math.random().toString(36).slice(2,8), adjusted:false, adjustHistory:[]}));
-      finalizeAssistedOrder(name, items, true);
-    });
-  } else {
-    resultWrap.innerHTML = `
-      <div class="notice" style="border-left-color:var(--amber);">查無此人，將視為新訪客建立訂單（姓名：${name}）</div>
-      <div id="assistItemPicker">${sampleItemPool.map((it,idx)=>`
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);">
-          <div style="font-size:13px;">${it.name}${it.size?`（${it.size}）`:''} <span style="color:var(--ink-soft);font-size:11px;">$${it.price}</span></div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <button class="qtyMinusAssist" data-idx="${idx}" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--line);background:#fff;">−</button>
-            <span class="mono assistQtyVal" data-idx="${idx}" style="min-width:14px;text-align:center;">0</span>
-            <button class="qtyPlusAssist" data-idx="${idx}" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--line);background:#fff;">+</button>
-          </div>
-        </div>
-      `).join('')}</div>
-      ${typeSelectorHtml()}
-      <button id="assistCreateBtn" class="action-btn primary" style="width:100%;margin-top:14px;">建立新訪客訂單</button>
-    `;
-    bindTypeSelectorToggle();
-    const qtyState = {};
-    document.querySelectorAll('.qtyPlusAssist').forEach(btn=>btn.addEventListener('click', ()=>{
-      const idx = btn.getAttribute('data-idx');
-      qtyState[idx] = (qtyState[idx]||0)+1;
-      document.querySelector(`.assistQtyVal[data-idx="${idx}"]`).textContent = qtyState[idx];
-    }));
-    document.querySelectorAll('.qtyMinusAssist').forEach(btn=>btn.addEventListener('click', ()=>{
-      const idx = btn.getAttribute('data-idx');
-      qtyState[idx] = Math.max(0,(qtyState[idx]||0)-1);
-      document.querySelector(`.assistQtyVal[data-idx="${idx}"]`).textContent = qtyState[idx];
-    }));
-    document.getElementById('assistCreateBtn').addEventListener('click', ()=>{
-      const items = Object.entries(qtyState).filter(([,q])=>q>0).map(([idx,q])=>{
-        const base = sampleItemPool[idx];
-        return {...base, qty:q, rowId:'r'+Math.random().toString(36).slice(2,8), adjusted:false, adjustHistory:[]};
-      });
-      if(items.length===0){ alert('請至少選擇一項品項'); return; }
-      finalizeAssistedOrder(name, items, false);
-    });
-  }
-});
-
-function finalizeAssistedOrder(name, items, isKnown){
-  const type = document.getElementById('assistTypeSelect').value;
-  const table = type==='dinein' ? (parseInt(document.getElementById('assistTable').value)||null) : null;
-  const headcount = type==='dinein' ? (parseInt(document.getElementById('assistHeadcount').value)||null) : null;
-  const customer = isKnown
-    ? { lineName:name, customName:null, title:'', source:'line' }
-    : { lineName:null, customName:name, title:'', source:'custom' };
-  const order = buildOrderObject(type, items, customer);
-  if(type==='dinein'){ order.table = table; order.headcount = headcount; }
-  document.getElementById('assistOverlay').classList.remove('show');
-  showToast(`已建立代點訂單 ${order.code}`);
-  renderList();
-}
 
 let toastTimer;
 function showToast(msg){
