@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>茶語站 店員後台</title>
+<title>茶語站 點餐</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Barlow+Condensed:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap');
 
@@ -16,8 +16,8 @@
     --brown-deep: #4A2F20;
     --red: #C1391F;
     --green: #4F7A63;
-    --amber: #B8862E;
     --line: rgba(42,36,32,0.14);
+    --radius: 2px;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{
@@ -26,1235 +26,1487 @@
     color: var(--ink);
     -webkit-font-smoothing: antialiased;
   }
-  .num{ font-family:'Barlow Condensed', sans-serif; font-weight:700; }
+  .app{
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    background: var(--paper);
+    position: relative;
+    padding-bottom: 90px;
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(42,36,32,0.06) 1px, transparent 0);
+    background-size: 14px 14px;
+  }
+  .num{ font-family:'Barlow Condensed', sans-serif; font-weight:700; letter-spacing:0.02em; }
   .mono{ font-family:'Space Mono', monospace; }
 
-  .app{
-    max-width: 520px; margin:0 auto; min-height:100vh; background: var(--paper);
-    background-image: radial-gradient(circle at 1px 1px, rgba(42,36,32,0.06) 1px, transparent 0);
-    background-size:14px 14px; padding-bottom:30px;
-  }
-
+  /* ---------- Header ---------- */
   header{
-    background: var(--ink); color: var(--paper); padding:16px 18px 0;
-    position: sticky; top:0; z-index:30; border-bottom:3px solid var(--red);
+    background: var(--ink);
+    color: var(--paper);
+    padding: 16px 18px 14px;
+    position: sticky; top:0; z-index: 30;
+    border-bottom: 3px solid var(--red);
   }
-  .header-top{ display:flex; align-items:center; justify-content:space-between; padding-bottom:12px; }
-  .brand{ font-family:'Barlow Condensed', sans-serif; font-weight:700; font-size:20px; letter-spacing:0.05em; display:flex; align-items:baseline; gap:8px;}
-  .brand small{ font-size:10.5px; font-weight:500; opacity:0.55; letter-spacing:0.1em; }
-  .clock{ font-family:'Space Mono', monospace; font-size:12px; opacity:0.7; }
+  .brand-row{ display:flex; align-items:center; justify-content:space-between; }
+  .brand{
+    font-family:'Barlow Condensed', sans-serif;
+    font-weight:700; font-size:22px; letter-spacing:0.06em;
+    display:flex; align-items:baseline; gap:8px;
+  }
+  .brand small{ font-size:11px; font-weight:500; opacity:0.6; letter-spacing:0.12em; }
+  .lang-switch{ display:flex; gap:4px; }
+  .lang-btn{
+    font-family:'Space Mono', monospace;
+    font-size:11px; padding:4px 8px;
+    background:transparent; color: rgba(237,227,204,0.55);
+    border:1px solid rgba(237,227,204,0.25); border-radius:2px;
+    cursor:pointer;
+  }
+  .lang-btn.active{ background: var(--paper); color: var(--ink); border-color: var(--paper); }
 
-  .staff-badge{ display:flex; align-items:center; gap:8px; }
-  .staff-name{ font-size:12.5px; font-weight:600; }
-  .staff-name-label{ font-size:9.5px; color:rgba(237,227,204,0.5); display:block; letter-spacing:0.04em; }
-  .logout-btn{
-    font-size:11px; padding:5px 10px; background:transparent; color: rgba(237,227,204,0.7);
-    border:1px solid rgba(237,227,204,0.3); border-radius:4px; cursor:pointer;
+  .context-row{
+    margin-top:12px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;
   }
+  .order-type-pills{ display:flex; gap:6px; flex:1; }
+  .pill{
+    flex:1; text-align:center; padding:8px 6px; font-size:12.5px; font-weight:500;
+    background: rgba(237,227,204,0.08); color: rgba(237,227,204,0.65);
+    border:1px solid rgba(237,227,204,0.2); border-radius:3px; cursor:pointer;
+    transition: all .15s ease;
+  }
+  .pill.active{ background: var(--red); border-color: var(--red); color:#fff; }
+  .table-badge{
+    font-family:'Space Mono', monospace; font-size:11px;
+    background: var(--green); color:#fff; padding:6px 10px; border-radius:2px;
+    display:none; align-items:center; gap:5px;
+  }
+  .table-badge.show{ display:inline-flex; }
 
-  .lang-badge{
-    font-size:9.5px; font-weight:700; padding:2px 6px; border-radius:2px; letter-spacing:0.03em;
-    background:#EFE2D3; color:var(--brown-deep);
+  .utility-row{ display:flex; gap:8px; padding:10px 0 12px; }
+  .utility-btn{
+    font-size:11px; padding:6px 11px; background: rgba(237,227,204,0.08); color: rgba(237,227,204,0.75);
+    border:1px solid rgba(237,227,204,0.2); border-radius:20px; cursor:pointer; display:flex; align-items:center; gap:4px;
+    position:relative;
   }
-
-  /* revenue tab */
-  .revenue-wrap{ padding:16px; }
-  .revenue-total-card{
-    background:var(--ink); color:var(--paper); border-radius:8px; padding:20px; text-align:center; margin-bottom:16px;
-  }
-  .revenue-total-label{ font-size:11px; opacity:0.6; letter-spacing:0.06em; margin-bottom:6px; }
-  .revenue-total-value{ font-family:'Barlow Condensed', sans-serif; font-size:38px; font-weight:700; }
-  .revenue-total-sub{ font-size:11px; opacity:0.55; margin-top:4px; }
-  .revenue-section-title{ font-size:13px; font-weight:700; margin: 18px 0 8px; }
-  .staff-summary-table, .txn-table{ width:100%; border-collapse:collapse; background:#fff; border-radius:6px; overflow:hidden; box-shadow:0 2px 8px rgba(42,36,32,0.06);}
-  .staff-summary-table th, .txn-table th{
-    text-align:left; font-size:10.5px; color:var(--ink-soft); font-weight:600; padding:9px 10px; border-bottom:1px solid var(--line);
-  }
-  .staff-summary-table td, .txn-table td{ padding:9px 10px; font-size:12.5px; border-bottom:1px solid var(--line); }
-  .staff-summary-table tr:last-child td, .txn-table tr:last-child td{ border-bottom:none; }
-  .staff-summary-table td.num-col, .txn-table td.num-col{ font-family:'Barlow Condensed', sans-serif; font-weight:700; text-align:right; }
-  .txn-table td.code-col{ font-family:'Space Mono', monospace; font-size:11.5px; }
-
-  /* login modal */
-  .login-modal{
-    position:fixed; inset:0; background: var(--ink); z-index:100; display:none;
-    align-items:center; justify-content:center; padding:24px;
-  }
-  .login-modal.show{ display:flex; }
-  .login-box{ max-width:340px; width:100%; text-align:center; }
-  .login-title{ color:var(--paper); font-family:'Barlow Condensed', sans-serif; font-size:22px; font-weight:700; margin-bottom:4px; }
-  .login-sub{ color:rgba(237,227,204,0.5); font-size:12px; margin-bottom:24px; }
-  .staff-option{
-    width:100%; padding:14px; margin-bottom:10px; background:rgba(237,227,204,0.06); color:var(--paper);
-    border:1px solid rgba(237,227,204,0.2); border-radius:6px; font-size:14px; font-weight:600; cursor:pointer;
-    text-align:left; display:flex; align-items:center; justify-content:space-between;
-  }
-  .staff-option:active{ background: var(--red); border-color:var(--red); }
-
-  .search-row{ display:flex; gap:8px; padding-bottom:12px; }
-  .search-row input{
-    flex:1; padding:10px 12px; border-radius:4px; border:1px solid rgba(237,227,204,0.25);
-    background: rgba(237,227,204,0.08); color:var(--paper); font-family:'Space Mono', monospace; font-size:14px;
-  }
-  .search-row input::placeholder{ color: rgba(237,227,204,0.4); }
-  .search-row button{
-    padding:10px 16px; background: var(--red); color:#fff; border:none; border-radius:4px;
-    font-size:13px; font-weight:700; cursor:pointer;
+  .my-orders-dot{
+    width:7px; height:7px; border-radius:50%; background:var(--red); display:inline-block; margin-left:2px;
   }
 
-  .tabs{ display:flex; gap:2px; padding-top:2px; }
-  .tab{
-    flex:1; text-align:center; padding:11px 4px; font-size:12.5px; font-weight:600;
-    color: rgba(237,227,204,0.55); border-bottom:3px solid transparent; cursor:pointer; position:relative;
+  .item-toggle{
+    width:40px; height:22px; border-radius:11px; background:#DCEAE3; position:relative; cursor:pointer; flex-shrink:0;
+    border:none; padding:0;
   }
-  .tab.active{ color: var(--paper); border-bottom-color: var(--red); }
-  .tab-badge{
-    position:absolute; top:5px; right:calc(50% - 30px); background:var(--red); color:#fff;
-    font-size:10px; font-weight:700; min-width:16px; height:16px; border-radius:8px;
-    display:flex; align-items:center; justify-content:center; padding:0 4px;
+  .item-toggle.off{ background: var(--line); }
+  .item-toggle::after{
+    content:''; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%;
+    background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.2); transition: left .15s ease;
+  }
+  .item-toggle.off::after{ left:20px; }
+
+  .item-card.sold-out{ opacity:0.55; }
+  .sold-out-tag{
+    font-family:'Barlow Condensed', sans-serif; font-weight:700; font-size:15px; color:var(--ink-soft); flex-shrink:0;
   }
 
-  .filter-row{ display:flex; gap:6px; padding:12px 16px; overflow-x:auto; }
-  .filter-chip{
-    flex-shrink:0; padding:6px 13px; font-size:12px; font-weight:500; border-radius:16px;
-    border:1px solid var(--line); background:#fff; color:var(--ink-soft); cursor:pointer; white-space:nowrap;
+  .myorder-card{ background:#fff; border-radius:6px; padding:16px; box-shadow:0 2px 10px rgba(42,36,32,0.08); }
+  .myorder-code{ font-family:'Space Mono', monospace; font-size:20px; font-weight:700; color:var(--brown-deep); }
+  .myorder-type{ font-size:12px; color:var(--ink-soft); margin-top:2px; }
+  .status-stepper{ display:flex; align-items:center; margin:18px 0 14px; }
+  .status-step{ flex:1; text-align:center; position:relative; }
+  .status-step .dot{
+    width:14px; height:14px; border-radius:50%; background:var(--line); margin:0 auto 6px; position:relative; z-index:2;
   }
-  .filter-chip.active{ background:var(--ink); color:var(--paper); border-color:var(--ink); }
-
-  .order-list{ padding: 4px 16px 20px; display:flex; flex-direction:column; gap:12px; }
-  .empty-state{ text-align:center; padding:60px 20px; color:var(--ink-soft); font-size:13.5px; line-height:1.8; }
-
-  .order-card{
-    background:#fff; border-radius:6px; box-shadow:0 2px 10px rgba(42,36,32,0.08);
-    overflow:hidden; border-left:5px solid var(--ink);
+  .status-step.done .dot{ background: var(--green); }
+  .status-step.active .dot{ background: var(--red); box-shadow:0 0 0 4px rgba(193,57,31,0.15); }
+  .status-step .label{ font-size:10.5px; color:var(--ink-soft); }
+  .status-step.done .label, .status-step.active .label{ color:var(--ink); font-weight:600; }
+  .status-line{
+    position:absolute; top:7px; left:-50%; width:100%; height:2px; background:var(--line); z-index:1;
   }
-  .order-card.type-dinein{ border-left-color: var(--brown); }
-  .order-card.type-takeout{ border-left-color: var(--amber); }
-  .order-card.type-delivery{ border-left-color: var(--green); }
-  .order-card.status-pendingconfirm{ border-left-color: var(--red); }
-
-  .order-card-top{ display:flex; align-items:center; justify-content:space-between; padding:12px 14px 8px; }
-  .order-code-block{ display:flex; align-items:baseline; gap:10px; }
-  .order-code{ font-family:'Space Mono', monospace; font-size:19px; font-weight:700; color:var(--brown-deep); }
-  .order-type-tag{
-    font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:3px; letter-spacing:0.02em;
+  .status-step.done .status-line{ background: var(--green); }
+  .status-step:first-child .status-line{ display:none; }
+  .myorder-current-status{ text-align:center; font-size:13px; font-weight:600; margin-bottom:4px; }
+  .myorder-item-line{
+    display:flex; justify-content:space-between; align-items:flex-start; padding:10px 0; border-bottom:1px solid var(--line);
   }
-  .order-type-tag.dinein{ background:#EFE2D3; color:var(--brown-deep); }
-  .order-type-tag.takeout{ background:#F5E9CE; color:#8A6414; }
-  .order-type-tag.delivery{ background:#DCEAE3; color:var(--green); }
-  .order-meta{ font-size:11px; color:var(--ink-soft); text-align:right; }
-  .order-elapsed{ font-family:'Space Mono', monospace; }
-  .order-elapsed.urgent{ color:var(--red); font-weight:700; }
-
-  .order-sub{ padding: 0 14px 8px; font-size:11.5px; color:var(--ink-soft); display:flex; gap:10px; flex-wrap:wrap; }
-  .order-sub b{ color:var(--ink); font-weight:600; }
-  .lowspend-flag{ color:var(--red); font-weight:700; }
-  .guest-flag{ background:var(--paper-dark); padding:1px 6px; border-radius:2px; font-weight:600; }
-
-  .order-items{ padding: 8px 14px; border-top:1px dashed var(--line); }
-  .order-item-line{ display:flex; justify-content:space-between; font-size:13px; padding:4px 0; }
-  .order-item-line .qty{ font-family:'Space Mono', monospace; color:var(--ink-soft); margin-right:6px; }
-  .order-item-line .opts{ font-size:11px; color:var(--ink-soft); }
-
-  .item-table{ width:100%; border-collapse:collapse; font-size:12.5px; }
-  .item-table th{
-    text-align:left; font-size:10.5px; color:var(--ink-soft); font-weight:600; padding:6px 6px;
-    border-bottom:1px solid var(--line); letter-spacing:0.02em;
+  .myorder-item-line:last-of-type{ border-bottom:none; }
+  .myorder-item-name{ font-size:13.5px; font-weight:500; }
+  .myorder-item-opts{ font-size:11px; color:var(--ink-soft); margin-top:1px; }
+  .myorder-item-price{ font-family:'Barlow Condensed', sans-serif; font-weight:700; font-size:14px; flex-shrink:0; padding-left:10px; }
+  .myorder-item-total{
+    display:flex; justify-content:space-between; align-items:baseline; padding-top:12px; margin-top:4px;
+    border-top:2px solid var(--ink); font-size:13px; font-weight:700;
   }
-  .item-table td{ padding:8px 6px; vertical-align:middle; }
-  .item-table tr.zebra{ background: rgba(42,36,32,0.045); }
-  .item-table td.col-idx{ font-family:'Space Mono', monospace; color:var(--ink-soft); width:20px; }
-  .item-table td.col-size{ color:var(--ink-soft); white-space:nowrap; }
-  .item-table td.col-qty{ font-family:'Space Mono', monospace; text-align:center; width:28px; }
-  .item-table td.col-amount{ font-family:'Barlow Condensed', sans-serif; font-weight:700; text-align:right; white-space:nowrap; }
-  .item-table td.col-icesweet{ font-size:11.5px; color:var(--ink-soft); cursor:pointer; white-space:nowrap; }
-  .item-table td.col-icesweet .edit-hint{ font-size:9.5px; color:var(--brown); margin-left:3px; }
-  .adjusted-tag{
-    display:inline-block; font-size:9.5px; font-weight:700; color:var(--red); background:#F6E4DE;
-    padding:1px 6px; border-radius:2px; margin:0 4px; cursor:pointer; text-decoration:underline;
+  .myorder-item-total .num{ font-size:19px; color:var(--brown-deep); }
+  .table-input-row{ display:none; align-items:center; gap:6px; }
+  .table-input-row.show{ display:flex; }
+  .table-input-row input{
+    width:78px; padding:6px 8px; font-size:12.5px; border-radius:2px; border:1px solid rgba(237,227,204,0.3);
+    background: rgba(237,227,204,0.08); color: var(--paper); font-family:'Space Mono', monospace;
   }
-  .icesweet-edit{ display:flex; gap:4px; flex-wrap:wrap; }
-  .icesweet-edit select{
-    font-size:11px; padding:3px 4px; border:1px solid var(--line); border-radius:3px; background:#fff; color:var(--ink);
-  }
-  .icesweet-edit button{
-    font-size:10.5px; padding:3px 7px; border:none; border-radius:3px; background:var(--ink); color:var(--paper); cursor:pointer;
+  .table-input-row input::placeholder{ color: rgba(237,227,204,0.4); }
+  .table-input-row button{
+    font-size:11.5px; padding:6px 10px; background: var(--paper); color: var(--ink); border:none;
+    border-radius:2px; font-weight:700; cursor:pointer;
   }
 
-  .customer-row{
-    padding: 8px 14px 0; display:flex; align-items:center; gap:6px; font-size:12.5px;
+  /* ---------- Category tabs ---------- */
+  .cat-tabs{
+    display:flex; gap:6px; overflow-x:auto; padding: 12px 14px;
+    background: var(--paper-dark); border-bottom:1px solid var(--line);
+    position: sticky; z-index:29;
+    scrollbar-width:none;
   }
-  .customer-name{ font-weight:700; }
-  .customer-title{ color:var(--ink-soft); }
-  .customer-source{
-    font-size:9.5px; padding:1px 6px; border-radius:2px; font-weight:700; letter-spacing:0.02em;
+  .cat-tabs::-webkit-scrollbar{ display:none; }
+  .cat-tab{
+    flex-shrink:0; padding:7px 14px; font-size:13px; font-weight:500;
+    background: transparent; color: var(--ink-soft);
+    border:1px solid var(--line); border-radius:20px; white-space:nowrap; cursor:pointer;
   }
-  .customer-source.line{ background:#DCF3E4; color:#06A54A; }
-  .customer-source.guest{ background:var(--paper-dark); color:var(--ink-soft); }
-  .customer-source.custom{ background:#EFE2D3; color:var(--brown-deep); }
-  .customer-source.custom-tag{ background:var(--paper-dark); color:var(--ink-soft); }
-  .staff-note{
-    font-size:11px; color:var(--ink); background:#F5EFDD; padding:2px 8px; border-radius:10px;
-    cursor:pointer; border:1px dashed transparent;
-  }
-  .staff-note.empty{ color:var(--ink-soft); background:transparent; border-color:var(--line); }
+  .cat-tab.active{ background: var(--ink); color: var(--paper); border-color:var(--ink); }
 
-  .order-total-row{
-    display:flex; justify-content:space-between; align-items:center; padding:10px 14px;
-    border-top:1px solid var(--line); background:var(--paper-dark);
+  /* ---------- Item list ---------- */
+  .section-title{
+    padding: 18px 18px 6px;
+    display:flex; align-items:baseline; gap:8px;
   }
-  .order-total-label{ font-size:12px; color:var(--ink-soft); }
-  .order-total-value{ font-family:'Barlow Condensed', sans-serif; font-size:20px; font-weight:700; }
+  .section-title .zh{ font-size:19px; font-weight:700; }
+  .section-title .en{ font-size:11px; color:var(--ink-soft); letter-spacing:0.08em; text-transform:uppercase; }
 
-  .order-actions{ display:flex; gap:8px; padding:12px 14px; }
-  .action-btn{
-    flex:1; padding:11px; border:none; border-radius:4px; font-size:13px; font-weight:700; cursor:pointer;
+  .item-list{ padding: 4px 14px 8px; }
+  .item-card{
+    display:flex; align-items:center; gap:12px;
+    padding:14px 4px; border-bottom:1px solid var(--line);
+    cursor:pointer;
   }
-  .action-btn.primary{ background: var(--ink); color: var(--paper); }
-  .action-btn.confirm{ background: var(--green); color:#fff; }
-  .action-btn.pay{ background: var(--red); color:#fff; }
-  .action-btn.secondary{ background:transparent; border:1.5px solid var(--line); color:var(--ink-soft); }
-  .action-btn:active{ opacity:0.8; }
+  .item-main{ flex:1; min-width:0; }
+  .item-name-row{ display:flex; align-items:center; gap:7px; }
+  .item-name{ font-size:15.5px; font-weight:500; }
+  .tag{
+    font-size:10px; font-weight:700; padding:2px 6px; border-radius:2px; letter-spacing:0.03em;
+  }
+  .tag.hot{ background:#F1DCCF; color:#8A3A1B; }
+  .tag.cold{ background:#DCEAE3; color:var(--green); }
+  .item-en{ font-size:11.5px; color:var(--ink-soft); margin-top:2px; }
+  .item-price{
+    font-family:'Barlow Condensed', sans-serif; font-weight:700; font-size:20px;
+    color: var(--brown-deep); flex-shrink:0;
+  }
+  .item-add{
+    width:30px; height:30px; border-radius:50%; border:1.5px solid var(--ink);
+    background:transparent; color:var(--ink); font-size:17px; font-weight:600;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer;
+  }
+  .item-add:active{ background:var(--ink); color:var(--paper); }
 
-  .paid-badge{
-    display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; color:var(--green);
-    padding:8px 14px 12px;
+  /* ---------- Cart bar ---------- */
+  .cart-bar{
+    position: fixed; bottom:0; left:50%; transform: translateX(-50%);
+    width:100%; max-width:480px;
+    background: var(--ink); color: var(--paper);
+    padding: 13px 18px; display:none; align-items:center; justify-content:space-between;
+    z-index:40; cursor:pointer; box-shadow: 0 -4px 16px rgba(0,0,0,0.18);
   }
-  .staff-trail{
-    font-size:10.5px; color:var(--ink-soft); padding:8px 14px 0; letter-spacing:0.01em;
+  .cart-bar.show{ display:flex; }
+  .cart-left{ display:flex; align-items:center; gap:10px; }
+  .cart-count{
+    background: var(--red); color:#fff; font-size:12px; font-weight:700;
+    width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center;
   }
-  .staff-trail.handoff{ color:var(--brown-deep); font-weight:600; }
+  .cart-label{ font-size:13.5px; font-weight:500; }
+  .cart-total{ font-family:'Barlow Condensed', sans-serif; font-size:20px; font-weight:700; }
+
+  /* ---------- Overlay panels ---------- */
+  .overlay{
+    position:fixed; inset:0; background:rgba(42,36,32,0.5); z-index:50;
+    display:none; align-items:flex-end; justify-content:center;
+  }
+  .overlay.show{ display:flex; }
+  .sheet{
+    background: var(--paper); width:100%; max-width:480px;
+    border-radius: 14px 14px 0 0; max-height:88vh; overflow-y:auto;
+    animation: slideUp .22s ease;
+  }
+  @keyframes slideUp{ from{ transform: translateY(30px); opacity:0; } to{ transform:translateY(0); opacity:1; } }
+  .sheet-handle{ width:36px; height:4px; background: var(--line); border-radius:2px; margin:10px auto 4px; }
+  .sheet-header{
+    padding:8px 20px 14px; display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid var(--line);
+  }
+  .sheet-title{ font-size:17px; font-weight:700; }
+  .sheet-close{ background:none; border:none; font-size:20px; color:var(--ink-soft); cursor:pointer; }
+  .sheet-body{ padding:18px 20px 24px; }
+
+  /* option groups (sweetness/ice) */
+  .opt-group{ margin-bottom:20px; }
+  .opt-label{ font-size:13px; font-weight:700; color:var(--ink-soft); margin-bottom:9px; letter-spacing:0.03em; }
+  .opt-choices{ display:flex; gap:8px; flex-wrap:wrap; }
+  .opt-choice{
+    padding:8px 14px; font-size:13px; border:1.5px solid var(--line); border-radius:20px;
+    background:#fff; cursor:pointer; color:var(--ink-soft);
+  }
+  .opt-choice.selected{ border-color:var(--red); background: var(--red); color:#fff; }
+
+  .qty-row{ display:flex; align-items:center; justify-content:space-between; margin:20px 0 6px; }
+  .qty-control{ display:flex; align-items:center; gap:14px; }
+  .qty-btn{
+    width:32px; height:32px; border-radius:50%; border:1.5px solid var(--ink);
+    background:transparent; font-size:16px; cursor:pointer;
+  }
+  .qty-num{ font-family:'Barlow Condensed', sans-serif; font-size:19px; font-weight:700; min-width:16px; text-align:center; }
+
+  .btn-primary{
+    width:100%; padding:15px; background: var(--red); color:#fff; border:none;
+    font-size:15px; font-weight:700; border-radius:4px; cursor:pointer; letter-spacing:0.02em;
+    display:flex; align-items:center; justify-content:space-between; padding-left:18px; padding-right:18px;
+  }
+  .btn-primary:active{ background:#a12e18; }
+  .btn-secondary{
+    width:100%; padding:14px; background:transparent; color:var(--ink); border:1.5px solid var(--ink);
+    font-size:14px; font-weight:600; border-radius:4px; cursor:pointer; margin-top:10px;
+  }
+
+  /* cart list */
+  .cart-item{ display:flex; gap:12px; padding:13px 0; border-bottom:1px solid var(--line); }
+  .cart-item-info{ flex:1; }
+  .cart-item-name{ font-size:14.5px; font-weight:500; }
+  .cart-item-opts{ font-size:12px; color:var(--ink-soft); margin-top:3px; }
+  .cart-item-right{ text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+  .cart-item-price{ font-family:'Barlow Condensed', sans-serif; font-weight:700; font-size:16px; }
+  .mini-qty{ display:flex; align-items:center; gap:8px; }
+  .mini-qty button{ width:22px; height:22px; border:1px solid var(--line); background:#fff; border-radius:50%; font-size:13px; cursor:pointer; }
+
+  .total-row{ display:flex; justify-content:space-between; align-items:baseline; padding:16px 0; border-top:2px solid var(--ink); margin-top:6px; }
+  .total-label{ font-size:14px; font-weight:600; }
+  .total-amount{ font-family:'Barlow Condensed', sans-serif; font-size:26px; font-weight:700; color:var(--brown-deep); }
+
+  .field{ margin-bottom:14px; }
+  .field-label{ font-size:12.5px; font-weight:600; color:var(--ink-soft); margin-bottom:6px; display:block; }
+  .field input{
+    width:100%; padding:11px 12px; border:1.5px solid var(--line); border-radius:4px;
+    font-size:14px; font-family:'Noto Sans TC',sans-serif; background:#fff;
+  }
+  .field select{
+    width:100%; padding:11px 12px; border:1.5px solid var(--line); border-radius:4px;
+    font-size:14px; font-family:'Noto Sans TC',sans-serif; background:#fff; color:var(--ink);
+    appearance:none; -webkit-appearance:none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B5F4F' stroke-width='1.5' fill='none' fill-rule='evenodd'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position: right 12px center;
+  }
+  .notice{
+    font-size:12px; color:var(--ink-soft); background:var(--paper-dark); padding:10px 12px;
+    border-radius:4px; margin-bottom:16px; line-height:1.6; border-left:3px solid var(--brown);
+  }
+  .line-login-btn{
+    width:100%; padding:13px; background:#06C755; color:#fff; border:none; border-radius:4px;
+    font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px;
+    cursor:pointer; margin-bottom:14px;
+  }
+
+  /* ---------- Ticket confirmation ---------- */
+  .ticket-wrap{ padding: 30px 22px; display:flex; flex-direction:column; align-items:center; }
+  .ticket{
+    width:100%; background:#fff; border-radius:2px;
+    box-shadow: 0 8px 30px rgba(42,36,32,0.18);
+    position:relative; overflow:hidden;
+  }
+  .ticket-top{ padding:22px 22px 18px; text-align:center; border-bottom:2px dashed var(--line); position:relative; }
+  .ticket-top::before, .ticket-top::after{
+    content:''; position:absolute; bottom:-11px; width:22px; height:22px; background:var(--paper);
+    border-radius:50%;
+  }
+  .ticket-top::before{ left:-11px; }
+  .ticket-top::after{ right:-11px; }
+  .ticket-eyebrow{ font-size:11px; letter-spacing:0.15em; color:var(--ink-soft); text-transform:uppercase; margin-bottom:8px; }
+  .ticket-number{ font-family:'Barlow Condensed', sans-serif; font-size:64px; font-weight:700; line-height:1; color:var(--red); }
+  .ticket-type{
+    display:inline-block; margin-top:10px; font-size:12px; font-weight:700; padding:4px 12px;
+    background:var(--ink); color:var(--paper); border-radius:20px; letter-spacing:0.04em;
+  }
+  .ticket-body{ padding:20px 22px; }
+  .ticket-line{ display:flex; justify-content:space-between; font-size:13.5px; padding:8px 0; border-bottom:1px solid var(--line); }
+  .ticket-line .name{ color:var(--ink); font-weight:500; }
+  .ticket-line .sub{ font-size:11px; color:var(--ink-soft); }
+  .ticket-line .price{ font-family:'Space Mono', monospace; font-size:13px; }
+  .ticket-footer{ padding:16px 22px 22px; }
+  .ticket-total-line{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:14px; }
+  .ticket-total-label{ font-size:13px; font-weight:700; }
+  .ticket-total-value{ font-family:'Barlow Condensed', sans-serif; font-size:28px; font-weight:700; }
+  .ticket-cash-notice{
+    text-align:center; font-size:11.5px; color:var(--ink-soft); background:var(--paper-dark);
+    padding:9px; border-radius:3px; letter-spacing:0.02em;
+  }
+  .ticket-stub-note{ text-align:center; font-size:11.5px; color:var(--ink-soft); margin-top:18px; line-height:1.7; max-width:280px; }
+  .new-order-btn{ margin-top:20px; }
 
   .toast{
-    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    position:fixed; bottom:100px; left:50%; transform:translateX(-50%);
     background:var(--ink); color:var(--paper); padding:10px 18px; border-radius:20px;
-    font-size:13px; z-index:60; opacity:0; pointer-events:none; transition: opacity .2s ease;
+    font-size:13px; z-index:60; opacity:0; pointer-events:none; transition: opacity .2s ease, transform .2s ease;
   }
-  .toast.show{ opacity:1; }
-
-  .demo-controls{
-    padding:14px 16px 6px; display:flex; gap:8px; flex-wrap:wrap; border-top:1px dashed var(--line); margin-top:10px;
-  }
-  .demo-controls .label{ width:100%; font-size:10.5px; color:var(--ink-soft); letter-spacing:0.05em; margin-bottom:2px; }
-  .demo-btn{
-    padding:7px 12px; font-size:11.5px; border-radius:4px; border:1px dashed var(--ink-soft);
-    background:transparent; color:var(--ink-soft); cursor:pointer;
-  }
-
-  /* search result modal */
-  .overlay{ position:fixed; inset:0; background:rgba(42,36,32,0.5); z-index:50; display:none; align-items:flex-end; justify-content:center; }
-  .overlay.show{ display:flex; }
-  .sheet{ background: var(--paper); width:100%; max-width:520px; border-radius:14px 14px 0 0; max-height:85vh; overflow-y:auto; }
-  .sheet-handle{ width:36px; height:4px; background: var(--line); border-radius:2px; margin:10px auto 4px; }
-  .sheet-close-row{ text-align:right; padding:6px 16px 0; }
-  .sheet-close{ background:none; border:none; font-size:20px; color:var(--ink-soft); cursor:pointer; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(-6px); }
 </style>
 </head>
 <body>
 <div class="app" id="app">
 
-  <div class="login-modal" id="loginModal">
-    <div class="login-box">
-      <div class="login-title">員工登入</div>
-      <div class="login-sub">請選擇目前使用此裝置的員工</div>
-      <div id="staffOptionList"></div>
-    </div>
-  </div>
-
+  <!-- HEADER -->
   <header>
-    <div class="header-top">
-      <div class="brand">茶語站 <small>主管後台</small></div>
-      <a href="staff.html" style="font-size:10.5px;color:rgba(237,227,204,0.5);text-decoration:underline;align-self:center;">← 訂單後台</a>
-      <div class="staff-badge">
-        <div>
-          <span class="staff-name-label">目前登入</span>
-          <span class="staff-name" id="currentStaffName">—</span>
-        </div>
-        <button class="logout-btn" id="loginSettingsBtn" title="登入方式設定（主管專用）" style="position:relative;">⚙<span class="tab-badge" id="pendingBadge" style="display:none;top:-6px;right:-6px;">0</span></button>
-        <button class="logout-btn" id="switchAccountBtn">切換帳號</button>
+    <div class="brand-row">
+      <div class="brand">茶語站 <small id="brandSub">D-CUP CAFÉ</small></div>
+      <div class="lang-switch" id="langSwitch">
+        <button class="lang-btn active" data-lang="zh">中</button>
+        <button class="lang-btn" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="ja">日</button>
+        <button class="lang-btn" data-lang="ko">한</button>
       </div>
     </div>
-    <div style="text-align:right; padding-bottom:8px;">
-      <span class="clock mono" id="clock">--:--:--</span>
+    <div class="context-row">
+      <div class="order-type-pills" id="orderTypePills">
+        <div class="pill active" data-type="dinein" data-i18n="orderType.dinein">內用</div>
+        <div class="pill" data-type="takeout" data-i18n="orderType.takeout">外帶</div>
+        <div class="pill" data-type="delivery" data-i18n="orderType.delivery">外送</div>
+      </div>
+      <div class="table-badge" id="tableBadge">🪑 <span id="tableNum">5</span> <span data-i18n="table.suffix">桌</span></div>
     </div>
-    <div class="search-row">
-      <input type="text" id="searchInput" placeholder="輸入後3碼查今日訂單，如 014" class="mono">
-      <button id="searchBtn">查詢</button>
-    </div>
-    <div class="tabs" id="tabs">
-      <div class="tab active" data-tab="revenue">營業額</div>
-      <div class="tab" data-tab="overview">今日點單</div>
-      <div class="tab" data-tab="attendance">員工出勤</div>
-      <div class="tab" data-tab="feedback">客戶留言</div>
-      <div class="tab" data-tab="satisfaction">滿意度</div>
+    <div class="utility-row">
+      <button class="utility-btn" id="manageItemsBtn">🔧 <span data-i18n="manage.entry">品項管理（員工）</span></button>
+      <button class="utility-btn" id="myOrdersBtn" style="display:none;">📋 <span data-i18n="myorders.entry">我的訂單</span><span class="my-orders-dot" id="myOrdersDot" style="display:none;"></span></button>
     </div>
   </header>
 
-  <div class="filter-row" id="filterRow" style="display:none;">
-    <div class="filter-chip active" data-filter="all">全部</div>
-    <div class="filter-chip" data-filter="dinein">內用</div>
-    <div class="filter-chip" data-filter="takeout">外帶</div>
-    <div class="filter-chip" data-filter="delivery">外送</div>
+  <!-- CATEGORY TABS -->
+  <div class="cat-tabs" id="catTabs"></div>
+
+  <!-- MENU -->
+  <div id="menuContainer"></div>
+
+  <!-- CART BAR -->
+  <div class="cart-bar" id="cartBar">
+    <div class="cart-left">
+      <div class="cart-count" id="cartCount">0</div>
+      <div class="cart-label" data-i18n="cart.viewCart">查看購物車</div>
+    </div>
+    <div class="cart-total num" id="cartBarTotal">$0</div>
   </div>
 
-  <div class="order-list" id="orderList"></div>
-
-  <div class="demo-controls">
-    <div class="label">— 展示用控制項（實際串接 GAS 後移除，改由前端每 10~15 秒輪詢 API）—</div>
-    <button class="demo-btn" id="demoAddDinein">＋ 模擬內用新單</button>
-    <button class="demo-btn" id="demoAddTakeout">＋ 模擬外帶新單</button>
-    <button class="demo-btn" id="demoAddDelivery">＋ 模擬外送新單</button>
-  </div>
-
+  <!-- TOAST -->
   <div class="toast" id="toast"></div>
 
-  <div class="overlay" id="searchOverlay">
+  <!-- ITEM OPTION SHEET -->
+  <div class="overlay" id="itemOverlay">
     <div class="sheet">
       <div class="sheet-handle"></div>
-      <div class="sheet-close-row"><button class="sheet-close" id="searchClose">✕</button></div>
-      <div id="searchResult" style="padding:0 4px 20px"></div>
+      <div class="sheet-header">
+        <div>
+          <div class="sheet-title" id="optItemName">品項名稱</div>
+          <div class="item-en" id="optItemSub" style="margin-top:3px"></div>
+        </div>
+        <button class="sheet-close" data-close="itemOverlay">✕</button>
+      </div>
+      <div class="sheet-body">
+        <div class="opt-group" id="sizeGroup" style="display:none">
+          <div class="opt-label" data-i18n="opt.size">杯型</div>
+          <div class="opt-choices" id="sizeChoices"></div>
+        </div>
+        <div class="notice" id="takeoutSizeNotice" style="display:none" data-i18n="size.takeoutFixed">外帶固定杯型</div>
+        <div class="opt-group">
+          <div class="opt-label" data-i18n="opt.sweetness">甜度</div>
+          <div class="opt-choices" id="sweetnessChoices"></div>
+        </div>
+        <div class="opt-group">
+          <div class="opt-label" data-i18n="opt.ice">冰塊</div>
+          <div class="opt-choices" id="iceChoices"></div>
+        </div>
+        <div class="qty-row">
+          <div class="opt-label" style="margin:0" data-i18n="opt.qty">數量</div>
+          <div class="qty-control">
+            <button class="qty-btn" id="qtyMinus">−</button>
+            <div class="qty-num" id="qtyNum">1</div>
+            <button class="qty-btn" id="qtyPlus">+</button>
+          </div>
+        </div>
+        <button class="btn-primary" id="addToCartBtn">
+          <span data-i18n="opt.addToCart">加入購物車</span>
+          <span id="addToCartPrice">$70</span>
+        </button>
+      </div>
     </div>
   </div>
 
-  <div class="overlay" id="historyOverlay">
+  <!-- CART SHEET -->
+  <div class="overlay" id="cartOverlay">
     <div class="sheet">
       <div class="sheet-handle"></div>
-      <div class="sheet-close-row"><button class="sheet-close" id="historyClose">✕</button></div>
-      <div id="historyResult"></div>
+      <div class="sheet-header">
+        <div class="sheet-title" data-i18n="cart.title">購物車</div>
+        <button class="sheet-close" data-close="cartOverlay">✕</button>
+      </div>
+      <div class="sheet-body">
+        <div id="cartList"></div>
+        <div class="total-row">
+          <div class="total-label" data-i18n="cart.total">總計</div>
+          <div class="total-amount num" id="cartTotal">$0</div>
+        </div>
+        <button class="btn-primary" id="goCheckoutBtn">
+          <span data-i18n="cart.checkout">前往結帳</span>
+          <span>→</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHECKOUT SHEET -->
+  <div class="overlay" id="checkoutOverlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div class="sheet-title" data-i18n="checkout.title">確認訂單</div>
+        <button class="sheet-close" data-close="checkoutOverlay">✕</button>
+      </div>
+      <div class="sheet-body">
+        <div class="notice" id="orderTypeNotice" data-i18n="checkout.dineinNotice">內用訂單將自動帶入您的桌號。</div>
+
+        <div id="deliveryFields" style="display:none">
+          <div class="field">
+            <label class="field-label" data-i18n="checkout.address">外送地址</label>
+            <input type="text" placeholder="台北市萬華區昆明街228號">
+          </div>
+          <div class="field">
+            <label class="field-label" data-i18n="checkout.phone">聯絡電話</label>
+            <input type="text" placeholder="0912-345-678">
+          </div>
+          <div class="notice" data-i18n="checkout.deliveryAcceptNotice">外送訂單由外送員或店家依距離評估是否接單；外送員僅送達大樓／社區大門口，不進入室內或上樓。</div>
+        </div>
+
+        <div id="dineinFields" style="display:none">
+          <div class="field">
+            <label class="field-label" data-i18n="table.label">桌次</label>
+            <select id="tableSelect">
+              <option value="" data-i18n="table.select">請選擇桌次</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label" data-i18n="headcount.label">用餐人數</label>
+            <select id="headcountSelect">
+              <option value="" data-i18n="headcount.select">請選擇人數</option>
+            </select>
+          </div>
+          <div class="notice" id="minSpendNotice" data-i18n="minspend.notice">低消提醒：假日每人低消 $70，平日每人低消 $50</div>
+          <div class="notice" id="minSpendStatus" style="display:none; border-left-color:var(--red); color:var(--red); font-weight:600;"></div>
+          <div class="notice" id="guestCapNotice" style="display:none; border-left-color:var(--green);"></div>
+        </div>
+
+        <div id="loginOptions">
+          <div class="notice" data-i18n="checkout.loginNotice">訪客結帳所填寫的姓名與電話僅暫存於本裝置瀏覽器，換裝置或清除快取即遺失。常客建議使用 LINE 登入，避免每次都要重新輸入資料。</div>
+          <button class="line-login-btn" id="lineLoginBtn">
+            <span>💬</span> <span id="lineLoginText" data-i18n="checkout.lineLogin">使用 LINE 登入以送出訂單</span>
+          </button>
+          <button class="btn-secondary" id="guestLoginBtn" style="margin-top:0" data-i18n="checkout.guestMode">訪客結帳（免登入）</button>
+        </div>
+
+        <div id="loggedInNotice" style="display:none" class="notice" style="border-left-color:var(--green)">
+          <span id="loggedInLabel"><span data-i18n="checkout.loggedInAs">已登入</span>：<b>王小明</b></span>
+        </div>
+
+        <div class="field" id="customNameField" style="display:none">
+          <label class="field-label" id="customNameLabel" data-i18n="checkout.customName">自訂名稱（選填，用於現場叫號／稱呼）</label>
+          <input type="text" id="customNameInput" data-i18n-placeholder="checkout.customNamePlaceholder" placeholder="例如：Tom、佳佳">
+        </div>
+
+        <div class="field" id="customPhoneField" style="display:none">
+          <label class="field-label" data-i18n="checkout.customPhone">手機號碼（選填，取餐時可用末3碼核對身份）</label>
+          <input type="tel" inputmode="numeric" id="customPhoneInput" data-i18n-placeholder="checkout.customPhonePlaceholder" placeholder="0912345678">
+        </div>
+
+        <div class="field" id="assistOrderField" style="display:none">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;color:var(--ink);">
+            <input type="checkbox" id="assistOrderCheckbox" style="width:16px;height:16px;">
+            <span data-i18n="checkout.assistMode">偵測到員工帳號，是否為代客點餐？</span>
+          </label>
+        </div>
+
+        <div class="total-row" style="margin-top:4px">
+          <div class="total-label" data-i18n="cart.total">總計</div>
+          <div class="total-amount num" id="checkoutTotal">$0</div>
+        </div>
+        <div class="notice" style="margin-top:0" data-i18n="checkout.cashOnly">僅接受現金支付，請於取餐時至櫃台結帳。</div>
+
+        <button class="btn-primary" id="submitOrderBtn" disabled>
+          <span data-i18n="checkout.submit">送出訂單</span>
+          <span>✓</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TICKET / CONFIRMATION -->
+  <div class="overlay" id="ticketOverlay">
+    <div class="sheet" style="border-radius:0; background:var(--paper);">
+      <div class="ticket-wrap">
+        <div class="ticket">
+          <div class="ticket-top">
+            <div class="ticket-eyebrow" data-i18n="ticket.pickupNumber">取餐編號</div>
+            <div class="ticket-number mono" id="ticketNumber">0718-014</div>
+            <div class="ticket-type" id="ticketType">內用 · 5 桌</div>
+          </div>
+          <div class="ticket-body" id="ticketBody"></div>
+          <div class="ticket-footer">
+            <div class="ticket-total-line">
+              <div class="ticket-total-label" data-i18n="cart.total">總計</div>
+              <div class="ticket-total-value num" id="ticketTotal">$0</div>
+            </div>
+            <div class="ticket-cash-notice" data-i18n="ticket.cashNotice">請保留此畫面，至櫃台出示編號並以現金結帳</div>
+          </div>
+        </div>
+        <div class="ticket-stub-note" data-i18n="ticket.stubNote">此編號已儲存在您的手機，可隨時於下方「我的訂單」查看目前製作進度。</div>
+        <button class="btn-secondary new-order-btn" id="newOrderBtn" data-i18n="ticket.newOrder">繼續點餐</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MY ORDERS -->
+  <div class="overlay" id="myOrdersOverlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div class="sheet-title" data-i18n="myorders.title">我的訂單</div>
+        <button class="sheet-close" data-close="myOrdersOverlay">✕</button>
+      </div>
+      <div class="sheet-body" id="myOrdersBody"></div>
     </div>
   </div>
 
 </div>
 
 <script>
-/* This page is read-only for order processing — accepting, preparing, and checking out
-   orders happens on staff.html. Managers switch there to work the counter. */
-const ORDER_ACTIONS_ENABLED = false;
 /* ---------------- DATA ---------------- */
-const sampleItemPool = [
-  {name:'紅茶', size:'大杯', sweet:'半糖', ice:'少冰', price:70},
-  {name:'珍珠奶茶', size:'中杯', sweet:'正常', ice:'去冰', price:70},
-  {name:'美式', size:null, sweet:'—', ice:'熱飲', price:70},
-  {name:'檸檬多多', size:null, sweet:'固定', ice:'固定冰', price:80},
-  {name:'桂花烏龍', size:'中杯', sweet:'微糖', ice:'正常冰', price:100},
-  {name:'草莓冰沙', size:null, sweet:'固定', ice:'—', price:100},
-  {name:'拿鐵', size:'中杯', sweet:'—', ice:'正常冰', price:85},
-];
-
-const sweetOptions = ['正常','少糖','半糖','微糖','無糖','固定'];
-const iceOptions = ['正常冰','少冰','微冰','去冰','熱飲','固定冰'];
-
-const namePool = [
-  {name:'王小明', title:'先生', source:'line'},
-  {name:'陳雅婷', title:'小姐', source:'line'},
-  {name:'John Smith', title:'先生', source:'line'},
-  {name:'佐藤さくら', title:'小姐', source:'custom'},
-  {name:'Kim Minjun', title:'先生', source:'custom'},
-  {name:'李佳蓉', title:'小姐', source:'line'},
-];
-
-
-/* Order numbering: 內用 000-299 / 外帶 300-599 / 外送 600-899, reset daily */
-let seqCounters = { dinein: -1, takeout: 299, delivery: 599 };
-let orders = [];   // { code, type, prepStatus, payStatus, items[], total, table, headcount, guest, createdAt, ...staffTrail }
-
-function pad(n){ return n<10 ? '0'+n : ''+n; }
-function pad3(n){ return String(n).padStart(3,'0'); }
-function todayPrefix(){
-  const d = new Date();
-  return `${pad(d.getMonth()+1)}${pad(d.getDate())}`;
-}
-function nextSeq(type){ seqCounters[type]++; return seqCounters[type]; }
-function makeCode(type){ return todayPrefix() + '-' + pad3(nextSeq(type)); }
-function fmtTime(ts){ if(!ts) return ''; const d = new Date(ts); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
-
-function randomItems(){
-  const count = 1 + Math.floor(Math.random()*3);
-  const picked = [];
-  for(let i=0;i<count;i++){
-    const base = sampleItemPool[Math.floor(Math.random()*sampleItemPool.length)];
-    picked.push({...base, qty: 1 + Math.floor(Math.random()*2), rowId: 'r'+Math.random().toString(36).slice(2,8), adjusted:false, adjustHistory:[]});
+const i18nStrings = {
+  zh: {
+    'orderType.dinein':'內用','orderType.takeout':'外帶','orderType.delivery':'外送',
+    'table.suffix':'桌','table.confirm':'確認','table.placeholder':'輸入桌號',
+    'opt.sweetness':'甜度','opt.ice':'冰塊','opt.qty':'數量','opt.addToCart':'加入購物車','opt.size':'杯型',
+    'size.M':'中杯','size.L':'大杯','size.takeoutFixed':'外帶固定杯型',
+    'checkout.guestMode':'訪客結帳（免登入）',
+    'checkout.guestNotice':'訪客模式下取餐編號僅暫存於此裝置瀏覽器，換裝置或清除快取將無法查詢。',
+    'toast.orderTypeChanged':'已切換用餐方式，購物車已清空，請重新選購',
+    'cart.viewCart':'查看購物車','cart.title':'購物車','cart.total':'總計','cart.checkout':'前往結帳',
+    'checkout.title':'確認訂單',
+    'checkout.dineinNotice':'內用訂單將自動帶入您的桌號。',
+    'checkout.takeoutNotice':'外帶訂單將產生取餐編號，請於製作完成後至櫃台取餐。',
+    'checkout.deliveryNotice':'外送訂單需經店家確認後才會開始製作，請填寫正確的地址與電話。',
+    'checkout.address':'外送地址','checkout.phone':'聯絡電話',
+    'checkout.lineLogin':'使用 LINE 登入以送出訂單',
+    'checkout.loggedInAs':'已登入',
+    'checkout.customName':'自訂名稱（選填，用於現場叫號／稱呼）',
+    'checkout.customPhone':'手機號碼（選填，取餐時可用末3碼核對身份）',
+    'checkout.customPhonePlaceholder':'0912345678',
+    'checkout.loginNotice':'訪客結帳所填寫的姓名與電話僅暫存於本裝置瀏覽器，換裝置或清除快取即遺失。常客建議使用 LINE 登入，避免每次都要重新輸入資料。',
+    'checkout.deliveryAcceptNotice':'外送訂單由外送員或店家依距離評估是否接單；外送員僅送達大樓／社區大門口，不進入室內或上樓。',
+    'checkout.customNamePlaceholder':'例如：Tom、佳佳',
+    'checkout.assistMode':'偵測到員工帳號，是否為代客點餐？',
+    'checkout.assistCustomerName':'代點顧客姓名',
+    'checkout.assistCustomerNamePlaceholder':'請輸入顧客姓名',
+    'checkout.cashOnly':'僅接受現金支付，請於取餐時至櫃台結帳。',
+    'checkout.submit':'送出訂單',
+    'ticket.pickupNumber':'取餐編號','ticket.cashNotice':'請保留此畫面，至櫃台出示編號並以現金結帳',
+    'ticket.stubNote':'此編號已儲存在您的手機，可隨時於下方「我的訂單」查看目前製作進度。',
+    'ticket.newOrder':'繼續點餐',
+    'manage.entry':'品項管理（員工）','manage.exit':'完成設定','menu.soldOut':'售完',
+    'myorders.entry':'我的訂單','myorders.title':'我的訂單','myorders.empty':'目前沒有進行中的訂單',
+    'myorders.status.new':'已送出，等待店家接單','myorders.status.making':'製作中',
+    'myorders.status.served':'已出餐，請至櫃台結帳','myorders.status.paid':'已結帳完成',
+    'myorders.note':'狀態每隔一段時間會自動更新，實際上線後會依店家後台即時狀態顯示',
+    'headcount.label':'用餐人數','table.label':'桌次','table.select':'請選擇桌次',
+    'headcount.select':'請選擇人數','headcount.suffix':'人',
+    'minspend.notice':'低消提醒：假日每人低消 $70，平日每人低消 $50',
+    'minspend.shortfall':'目前金額距離低消還差',
+    'guest.capNotice':'訪客模式依人數限制點餐杯數，最多可點',
+    'guest.capExceeded':'已超過訪客模式可點杯數上限，請增加人數或使用 LINE 登入'
+  },
+  ko: {
+    'orderType.dinein':'매장','orderType.takeout':'포장','orderType.delivery':'배달',
+    'table.suffix':'번 테이블','table.confirm':'확인','table.placeholder':'테이블 번호',
+    'opt.sweetness':'당도','opt.ice':'얼음량','opt.qty':'수량','opt.addToCart':'장바구니에 담기','opt.size':'사이즈',
+    'size.M':'미디엄','size.L':'라지','size.takeoutFixed':'포장은 사이즈 고정',
+    'checkout.guestMode':'게스트 주문 (로그인 없이)',
+    'checkout.guestNotice':'게스트 모드의 대기번호는 이 브라우저에만 저장됩니다.',
+    'toast.orderTypeChanged':'주문 방식이 변경되어 장바구니가 비워졌습니다',
+    'cart.viewCart':'장바구니 보기','cart.title':'장바구니','cart.total':'합계','cart.checkout':'결제하기',
+    'checkout.title':'주문 확인',
+    'checkout.dineinNotice':'테이블 번호가 자동으로 연결됩니다.',
+    'checkout.takeoutNotice':'포장 번호가 발급됩니다. 준비되면 카운터에서 수령해주세요.',
+    'checkout.deliveryNotice':'배달 주문은 매장 확인 후 조리가 시작됩니다. 정확한 주소와 전화번호를 입력해주세요.',
+    'checkout.address':'배달 주소','checkout.phone':'전화번호',
+    'checkout.lineLogin':'LINE으로 로그인하여 주문하기',
+    'checkout.loggedInAs':'로그인됨',
+    'checkout.customName':'닉네임 (선택, 매장 호출용)',
+    'checkout.customPhone':'휴대폰 번호（선택, 수령 시 뒤 3자리로 본인 확인 가능）',
+    'checkout.customPhonePlaceholder':'01012345678',
+    'checkout.loginNotice':'게스트 결제 시 입력한 이름과 전화번호는 이 기기의 브라우저에만 임시 저장되며, 기기를 바꾸거나 캐시를 지우면 사라집니다. 자주 이용하신다면 LINE 로그인을 권장합니다.',
+    'checkout.deliveryAcceptNotice':'배달 주문은 배달원 또는 매장이 거리를 확인한 후 수락 여부를 결정합니다. 배달원은 건물／단지 정문까지만 배달하며 실내나 위층으로 올라가지 않습니다.',
+    'checkout.customNamePlaceholder':'예: Tom, 지민',
+    'checkout.assistMode':'직원 계정이 감지되었습니다. 대리 주문입니까?',
+    'checkout.assistCustomerName':'대리 주문 고객 이름',
+    'checkout.assistCustomerNamePlaceholder':'고객 이름을 입력하세요',
+    'checkout.cashOnly':'현금 결제만 가능합니다. 수령 시 카운터에서 결제해주세요.',
+    'checkout.submit':'주문 보내기',
+    'ticket.pickupNumber':'대기번호','ticket.cashNotice':'이 화면을 저장하고 카운터에서 번호를 보여주며 결제해주세요',
+    'ticket.stubNote':'이 번호는 휴대폰에 저장되어 있으며 언제든지 진행 상황을 확인할 수 있습니다.',
+    'ticket.newOrder':'추가 주문',
+    'manage.entry':'품목 관리（직원용）','manage.exit':'설정 완료','menu.soldOut':'품절',
+    'myorders.entry':'내 주문','myorders.title':'내 주문','myorders.empty':'진행 중인 주문이 없습니다',
+    'myorders.status.new':'접수 대기 중','myorders.status.making':'제조 중',
+    'myorders.status.served':'제조 완료, 카운터에서 결제해주세요','myorders.status.paid':'결제 완료',
+    'myorders.note':'상태는 시간이 지나면 자동으로 갱신됩니다（실제 서비스에서는 매장 시스템과 실시간 연동됩니다）',
+    'headcount.label':'인원 수','table.label':'테이블','table.select':'테이블 선택',
+    'headcount.select':'인원 선택','headcount.suffix':'명',
+    'minspend.notice':'최소 소비 안내: 주말/공휴일 1인당 $70, 평일 1인당 $50',
+    'minspend.shortfall':'최소 소비 금액까지 남은 금액',
+    'guest.capNotice':'게스트 모드는 인원 수만큼 주문 가능합니다. 최대',
+    'guest.capExceeded':'게스트 모드 주문 가능 잔 수를 초과했습니다. 인원을 늘리거나 LINE으로 로그인해주세요'
+  },
+  en: {
+    'orderType.dinein':'Dine-in','orderType.takeout':'Takeout','orderType.delivery':'Delivery',
+    'table.suffix':'','table.confirm':'Confirm','table.placeholder':'Table no.',
+    'opt.sweetness':'Sweetness','opt.ice':'Ice','opt.qty':'Qty','opt.addToCart':'Add to cart','opt.size':'Size',
+    'size.M':'Medium','size.L':'Large','size.takeoutFixed':'Fixed size for takeout',
+    'checkout.guestMode':'Guest checkout (no login)',
+    'checkout.guestNotice':'In guest mode, your pickup number is saved only on this browser. It will be lost if you switch devices or clear cache.',
+    'toast.orderTypeChanged':'Order type changed — cart cleared, please reselect',
+    'cart.viewCart':'View cart','cart.title':'Cart','cart.total':'Total','cart.checkout':'Checkout',
+    'checkout.title':'Confirm order',
+    'checkout.dineinNotice':'Your table number is attached automatically.',
+    'checkout.takeoutNotice':'A pickup number will be generated. Collect at the counter when ready.',
+    'checkout.deliveryNotice':'Delivery orders need staff confirmation before preparation starts. Please enter a correct address and phone.',
+    'checkout.address':'Delivery address','checkout.phone':'Phone number',
+    'checkout.lineLogin':'Sign in with LINE to place order',
+    'checkout.loggedInAs':'Signed in as',
+    'checkout.customName':'Preferred name (optional, used for calling your order)',
+    'checkout.customPhone':"Phone number (optional — last 3 digits can verify your identity at pickup)",
+    'checkout.customPhonePlaceholder':'0912345678',
+    'checkout.loginNotice':"Name and phone entered as a guest are only stored temporarily in this browser and will be lost on another device or after clearing cache. Regulars should sign in with LINE to avoid re-entering details each time.",
+    'checkout.deliveryAcceptNotice':"Delivery orders are accepted or declined by the rider/shop based on distance. Riders only deliver to the building or community entrance — not upstairs or indoors.",
+    'checkout.customNamePlaceholder':'e.g. Tom, Amy',
+    'checkout.assistMode':'Staff account detected — placing this order for a customer?',
+    'checkout.assistCustomerName':"Customer's name",
+    'checkout.assistCustomerNamePlaceholder':"Enter the customer's name",
+    'checkout.cashOnly':'Cash only. Please pay at the counter when picking up.',
+    'checkout.submit':'Place order',
+    'ticket.pickupNumber':'Pickup number','ticket.cashNotice':'Keep this screen and show your number at the counter to pay',
+    'ticket.stubNote':'This number is saved on your phone. Check order progress anytime below.',
+    'ticket.newOrder':'Order more',
+    'manage.entry':'Item management (staff)','manage.exit':'Done','menu.soldOut':'Sold out',
+    'myorders.entry':'My orders','myorders.title':'My orders','myorders.empty':'No active orders right now',
+    'myorders.status.new':'Sent, waiting for the shop to accept','myorders.status.making':'Being prepared',
+    'myorders.status.served':'Ready — please pay at the counter','myorders.status.paid':'Paid',
+    'myorders.note':'Status updates automatically over time in this demo; a live system would reflect the shop\'s real-time status.',
+    'headcount.label':'Party size','table.label':'Table','table.select':'Select table',
+    'headcount.select':'Select party size','headcount.suffix':' people',
+    'minspend.notice':'Minimum spend: $70/person on weekends, $50/person on weekdays',
+    'minspend.shortfall':'Amount remaining to reach minimum spend',
+    'guest.capNotice':'Guest mode limits cups to party size. Maximum',
+    'guest.capExceeded':'Guest mode cup limit exceeded — increase party size or sign in with LINE'
+  },
+  ja: {
+    'orderType.dinein':'店内','orderType.takeout':'持ち帰り','orderType.delivery':'デリバリー',
+    'table.suffix':'番テーブル','table.confirm':'確定','table.placeholder':'テーブル番号',
+    'opt.sweetness':'甘さ','opt.ice':'氷の量','opt.qty':'数量','opt.addToCart':'カートに追加','opt.size':'サイズ',
+    'size.M':'M','size.L':'L','size.takeoutFixed':'持ち帰りはサイズ固定',
+    'checkout.guestMode':'ゲストとして注文（ログイン不要）',
+    'checkout.guestNotice':'ゲストモードでは受取番号はこの端末のブラウザにのみ保存されます。',
+    'toast.orderTypeChanged':'注文方法を変更しました。カートをクリアしました',
+    'cart.viewCart':'カートを見る','cart.title':'カート','cart.total':'合計','cart.checkout':'レジへ進む',
+    'checkout.title':'注文確認',
+    'checkout.dineinNotice':'テーブル番号が自動的に紐づきます。',
+    'checkout.takeoutNotice':'受取番号が発行されます。準備でき次第カウンターでお受け取りください。',
+    'checkout.deliveryNotice':'配達注文はお店の確認後に調理を開始します。正しい住所と電話番号をご入力ください。',
+    'checkout.address':'配達先住所','checkout.phone':'電話番号',
+    'checkout.lineLogin':'LINEでログインして注文する',
+    'checkout.loggedInAs':'ログイン中',
+    'checkout.customName':'呼び名（任意、店内でのお呼び出しに使用）',
+    'checkout.customPhone':'電話番号（任意、受け取り時に下3桁で本人確認できます）',
+    'checkout.customPhonePlaceholder':'09012345678',
+    'checkout.loginNotice':'ゲスト注文で入力したお名前と電話番号は、この端末のブラウザにのみ一時保存されます。端末を変えたりキャッシュを消すと消えてしまいます。よくご利用の方はLINEログインをおすすめします。',
+    'checkout.deliveryAcceptNotice':'配達注文は配達員または店舗が距離を確認した上で受注を判断します。配達員は建物・団地の入り口までのお届けとなり、室内や上階へは伺いません。',
+    'checkout.customNamePlaceholder':'例：Tom、さくら',
+    'checkout.assistMode':'スタッフアカウントを検出しました。代理注文しますか？',
+    'checkout.assistCustomerName':'代理注文するお客様のお名前',
+    'checkout.assistCustomerNamePlaceholder':'お客様のお名前を入力してください',
+    'checkout.cashOnly':'現金のみのお支払いです。お受け取り時にカウンターでお支払いください。',
+    'checkout.submit':'注文を送信',
+    'ticket.pickupNumber':'受取番号','ticket.cashNotice':'この画面を保存し、カウンターで番号を提示してお支払いください',
+    'ticket.stubNote':'この番号はスマートフォンに保存されています。下記からいつでも進捗を確認できます。',
+    'ticket.newOrder':'もっと注文する',
+    'manage.entry':'品目管理（スタッフ用）','manage.exit':'設定完了','menu.soldOut':'売り切れ',
+    'myorders.entry':'注文状況','myorders.title':'注文状況','myorders.empty':'進行中の注文はありません',
+    'myorders.status.new':'送信済み、店舗の受付待ち','myorders.status.making':'調理中',
+    'myorders.status.served':'完成、カウンターでお支払いください','myorders.status.paid':'支払い完了',
+    'myorders.note':'このデモでは時間経過で自動更新されます。実際は店舗システムとリアルタイム連携します。',
+    'headcount.label':'人数','table.label':'テーブル','table.select':'テーブルを選択',
+    'headcount.select':'人数を選択','headcount.suffix':'名',
+    'minspend.notice':'最低消費のご案内：休日は お一人様$70、平日は お一人様$50',
+    'minspend.shortfall':'最低消費金額まであと',
+    'guest.capNotice':'ゲストモードは人数分までご注文いただけます。上限',
+    'guest.capExceeded':'ゲストモードの上限杯数を超えています。人数を増やすかLINEでログインしてください'
   }
-  return picked;
-}
+};
 
-function randomCustomer(isGuest){
-  if(isGuest) return {lineName:'訪客', customName:null, title:'', source:'guest'};
-  const base = {...namePool[Math.floor(Math.random()*namePool.length)]};
-  const hasCustom = Math.random() < 0.4;
-  return {
-    lineName: base.name,
-    customName: hasCustom ? ['小可','Ken','阿May','小福'][Math.floor(Math.random()*4)] : null,
-    title: base.title,
-    source: base.source,
-  };
-}
+const categories = [
+  { id:'coffee', zh:'咖啡', en:'Coffee', ja:'コーヒー', ko:'커피' },
+  { id:'tea', zh:'茶', en:'Tea', ja:'お茶', ko:'차' },
+  { id:'milktea', zh:'奶茶', en:'Milk Tea', ja:'ミルクティー', ko:'밀크티' },
+  { id:'yakult', zh:'多多', en:'Yakult', ja:'ヤクルト', ko:'야쿠르트' },
+  { id:'vinegar', zh:'果醋', en:'Fruit Vinegar', ja:'フルーツビネガー', ko:'과일 식초' },
+  { id:'scented', zh:'花茶', en:'Scented Tea', ja:'花茶', ko:'꽃차' },
+  { id:'fruit', zh:'果茶', en:'Fruits Tea', ja:'フルーツティー', ko:'과일차' },
+  { id:'cocoa', zh:'可可', en:'Cocoa', ja:'ココア', ko:'코코아' },
+  { id:'slush', zh:'冰沙', en:'Slush', ja:'スラッシュ', ko:'슬러시' },
+];
 
-function buildOrderObject(type, items, customerOverride){
-  const total = items.reduce((s,i)=>s+i.price*i.qty,0);
-  const code = makeCode(type);
-  const langPool = ['zh','zh','zh','en','ja','ko'];
-  const isGuest = !customerOverride && type==='dinein' && Math.random() < 0.3;
-  const order = {
-    code, type,
-    prepStatus: type==='delivery' ? 'pendingconfirm' : 'new',
-    payStatus: 'unpaid',
-    items, total,
-    table: type==='dinein' ? (1+Math.floor(Math.random()*20)) : null,
-    headcount: type==='dinein' ? (1+Math.floor(Math.random()*4)) : null,
-    guest: isGuest,
-    customer: customerOverride || randomCustomer(isGuest),
-    lang: langPool[Math.floor(Math.random()*langPool.length)],
-    confirmedBy:null, confirmedAt:null,
-    acceptedBy:null, acceptedAt:null,
-    servedBy:null, servedAt:null,
-    paidBy:null, paidAt:null,
-    createdAt: Date.now(),
-  };
-  orders.unshift(order);
-  return order;
-}
+const items = [
+  { id:'americano', cat:'coffee', zh:'美式', en:'Americano', ja:'アメリカーノ', ko:'아메리카노', price:70, temp:'both' },
+  { id:'brazilian', cat:'coffee', zh:'巴西', en:'Brazilian', ja:'ブラジル', ko:'브라질 커피', price:80, temp:'hot' },
+  { id:'mandheling', cat:'coffee', zh:'曼特寧', en:'Mandheling', ja:'マンデリン', ko:'만델링 커피', price:80, temp:'hot' },
+  { id:'manba', cat:'coffee', zh:'曼巴', en:'Mandheling & Brazilian', ja:'マンバ', ko:'만바(만델링&브라질)', price:80, temp:'hot' },
+  { id:'bluemtn', cat:'coffee', zh:'藍山', en:'Blue Mountain', ja:'ブルーマウンテン', ko:'블루마운틴', price:80, temp:'hot' },
+  { id:'latte', cat:'coffee', zh:'拿鐵', en:'Latte', ja:'カフェラテ', ko:'라떼', price:85, temp:'both' },
 
-function makeOrder(type){ return buildOrderObject(type, randomItems()); }
+  { id:'blacktea', cat:'tea', zh:'紅茶', en:'Black Tea', ja:'紅茶', ko:'홍차', sizes:{M:50,L:70}, temp:'both' },
+  { id:'oolongblack', cat:'tea', zh:'烏龍紅茶', en:'Oolong Black Tea', ja:'烏龍紅茶', ko:'우롱 홍차', sizes:{M:50,L:70}, temp:'both' },
+  { id:'mintblack', cat:'tea', zh:'薄荷紅茶', en:'Mint Black Tea', ja:'ミント紅茶', ko:'민트 홍차', sizes:{M:50,L:70}, temp:'both' },
+  { id:'honeyblack', cat:'tea', zh:'蜂蜜紅茶', en:'Honey Black Tea', ja:'蜂蜜紅茶', ko:'꿀 홍차', sizes:{M:50,L:70}, temp:'both' },
+  { id:'lemonblack', cat:'tea', zh:'檸檬紅茶', en:'Lemon Black Tea', ja:'レモン紅茶', ko:'레몬 홍차', sizes:{M:50,L:70}, temp:'both' },
+  { id:'greentea', cat:'tea', zh:'綠茶', en:'Green Tea', ja:'緑茶', ko:'녹차', sizes:{M:50,L:70}, temp:'both' },
 
-/* seed a few initial orders so the board isn't empty */
-function seedOrders(){
-  makeOrder('dinein');
-  makeOrder('takeout');
-  const d = makeOrder('delivery');
+  { id:'milktea', cat:'milktea', zh:'奶茶', en:'Milk Tea', ja:'ミルクティー', ko:'밀크티', sizes:{M:70,L:80}, temp:'both' },
+  { id:'oolongmilk', cat:'milktea', zh:'烏龍奶茶', en:'Oolong Milk Tea', ja:'烏龍ミルクティー', ko:'우롱 밀크티', sizes:{M:70,L:80}, temp:'both' },
+  { id:'mintmilk', cat:'milktea', zh:'薄荷奶茶', en:'Mint Milk Tea', ja:'ミントミルクティー', ko:'민트 밀크티', sizes:{M:70,L:80}, temp:'both' },
+  { id:'almondmilk', cat:'milktea', zh:'杏仁奶茶', en:'Almond Milk Tea', ja:'アーモンドミルクティー', ko:'아몬드 밀크티', sizes:{M:70,L:80}, temp:'both' },
+  { id:'coconutmilk', cat:'milktea', zh:'椰香奶茶', en:'Coconut Milk Tea', ja:'ココナッツミルクティー', ko:'코코넛 밀크티', sizes:{M:70,L:80}, temp:'both' },
 
-  const m = makeOrder('dinein');
-  m.prepStatus='making'; m.acceptedBy='林經理'; m.acceptedAt = Date.now()-6*60000;
+  { id:'greenyakult', cat:'yakult', zh:'綠茶多多', en:'Yakult Green Tea', ja:'緑茶ヤクルト', ko:'녹차 야쿠르트', price:70, temp:'cold' },
+  { id:'lemonyakult', cat:'yakult', zh:'檸檬多多', en:'Lemon Yakult', ja:'レモンヤクルト', ko:'레몬 야쿠르트', price:80, temp:'cold' },
+  { id:'strawyakult', cat:'yakult', zh:'草莓多多', en:'Strawberry Yakult', ja:'ストロベリーヤクルト', ko:'딸기 야쿠르트', price:70, temp:'cold' },
+  { id:'peachyakult', cat:'yakult', zh:'水蜜桃多多', en:'Peach Yakult', ja:'ピーチヤクルト', ko:'복숭아 야쿠르트', price:70, temp:'cold' },
 
-  const s = makeOrder('takeout');
-  s.prepStatus='served';
-  s.acceptedBy='林經理'; s.acceptedAt = Date.now()-25*60000;
-  s.servedBy='陳店員'; s.servedAt = Date.now()-4*60000; // handoff demo: accepted by A, served by B
+  { id:'plumvinegar', cat:'vinegar', zh:'梅子果醋', en:'Plum Vinegar', ja:'梅ビネガー', ko:'매실 식초', price:70, temp:'cold' },
+  { id:'lemonvinegar', cat:'vinegar', zh:'檸檬果醋', en:'Lemon Vinegar', ja:'レモンビネガー', ko:'레몬 식초', price:80, temp:'cold' },
+  { id:'mulberryvinegar', cat:'vinegar', zh:'桑葚果醋', en:'Mulberries Vinegar', ja:'桑の実ビネガー', ko:'오디 식초', price:70, temp:'cold' },
 
-  const p1 = makeOrder('dinein');
-  p1.prepStatus='served'; p1.payStatus='paid';
-  p1.acceptedBy='林經理'; p1.acceptedAt = Date.now()-90*60000;
-  p1.servedBy='林經理'; p1.servedAt = Date.now()-80*60000;
-  p1.paidBy='林經理'; p1.paidAt = Date.now()-78*60000;
+  { id:'honeyrose', cat:'scented', zh:'玫瑰花蜜', en:'Honey Rose Tea', ja:'ローズハニーティー', ko:'허니로즈티', price:100, temp:'both' },
+  { id:'osmanthus', cat:'scented', zh:'桂花烏龍', en:'Osmanthus Oolong Tea', ja:'金木犀烏龍茶', ko:'계화 우롱차', price:100, temp:'both' },
+  { id:'chrysanthemum', cat:'scented', zh:'菊花普洱', en:'Chrysanthemum Pu Erh', ja:'菊花プーアル茶', ko:'국화 보이차', price:100, temp:'both' },
 
-  const p2 = makeOrder('takeout');
-  p2.prepStatus='served'; p2.payStatus='paid';
-  p2.acceptedBy='林經理'; p2.acceptedAt = Date.now()-70*60000;
-  p2.servedBy='林經理'; p2.servedAt = Date.now()-65*60000;
-  p2.paidBy='林經理'; p2.paidAt = Date.now()-64*60000;
+  { id:'pomelo', cat:'fruit', zh:'和風柚子', en:'Pomelo Tea', ja:'柚子茶', ko:'유자차', price:90, temp:'both' },
 
-  const p3 = makeOrder('dinein');
-  p3.prepStatus='served'; p3.payStatus='paid';
-  p3.acceptedBy='陳店員'; p3.acceptedAt = Date.now()-50*60000;
-  p3.servedBy='陳店員'; p3.servedAt = Date.now()-40*60000;
-  p3.paidBy='陳店員'; p3.paidAt = Date.now()-38*60000;
+  { id:'cocoa', cat:'cocoa', zh:'招牌可可', en:'Signature Cocoa', ja:'招牌ココア', ko:'시그니처 코코아', price:90, temp:'both' },
+  { id:'mintcocoa', cat:'cocoa', zh:'薄荷可可', en:'Mint Cocoa', ja:'ミントココア', ko:'민트 코코아', price:90, temp:'both' },
 
-  const p4 = makeOrder('delivery');
-  p4.prepStatus='served'; p4.payStatus='paid';
-  p4.confirmedBy='陳店員'; p4.confirmedAt = Date.now()-45*60000;
-  p4.acceptedBy='陳店員'; p4.acceptedAt = Date.now()-44*60000;
-  p4.servedBy='黃工讀生'; p4.servedAt = Date.now()-20*60000; // shift handoff
-  p4.paidBy='黃工讀生'; p4.paidAt = Date.now()-19*60000;
+  { id:'coffeeslush', cat:'slush', zh:'咖啡冰沙', en:'Coffee Slush', ja:'コーヒースラッシュ', ko:'커피 슬러시', price:100, temp:'cold' },
+  { id:'lemonslush', cat:'slush', zh:'檸檬冰沙', en:'Lemon Slush', ja:'レモンスラッシュ', ko:'레몬 슬러시', price:100, temp:'cold' },
+  { id:'strawslush', cat:'slush', zh:'草莓冰沙', en:'Strawberry Slush', ja:'ストロベリースラッシュ', ko:'딸기 슬러시', price:100, temp:'cold' },
+];
 
-  const p5 = makeOrder('takeout');
-  p5.prepStatus='served'; p5.payStatus='paid';
-  p5.acceptedBy='黃工讀生'; p5.acceptedAt = Date.now()-15*60000;
-  p5.servedBy='黃工讀生'; p5.servedAt = Date.now()-10*60000;
-  p5.paidBy='黃工讀生'; p5.paidAt = Date.now()-9*60000;
-}
-seedOrders();
+const sweetnessOpts = {
+  zh:['正常','少糖','半糖','微糖','無糖'],
+  en:['Regular','Less','Half','Light','None'],
+  ja:['普通','少なめ','半分','微糖','無糖'],
+  ko:['정상','소당','반당','미당','무당']
+};
+const iceOpts = {
+  zh:['正常冰','少冰','微冰','去冰','熱飲'],
+  en:['Regular','Less','Light','No ice','Hot'],
+  ja:['普通','少なめ','微氷','氷なし','ホット'],
+  ko:['일반','적게','아주 적게','얼음 없음','뜨거운']
+};
 
 /* ---------------- STATE ---------------- */
-let state = { tab:'revenue', filter:'all', revenueOffset:0, overviewSort:'time' };
+let state = {
+  lang: 'zh',
+  orderType: 'dinein',
+  tableNum: null,
+  headcount: null,
+  guestMode: false,
+  activeCat: 'coffee',
+  cart: [],
+  loggedIn: false,
+  currentItem: null,
+  currentSweet: 0,
+  currentIce: 0,
+  currentQty: 1,
+  manageMode: false,
+};
 
-const mockRevenueHistory = {}; // offset(1-6) -> { byStaff, txns } — simulates past days' data (would come from Sheet in production)
-function generateMockDayData(offset){
-  if(mockRevenueHistory[offset]) return mockRevenueHistory[offset];
-  const byStaff = {}; const txns = [];
-  staffList.forEach(s=>{
-    const count = 3 + Math.floor(Math.random()*8);
-    let subtotal = 0;
-    for(let i=0;i<count;i++){
-      const amt = 50 + Math.floor(Math.random()*8)*10;
-      subtotal += amt;
-      txns.push({ code:`--${pad3(i)}`, type:['dinein','takeout','delivery'][Math.floor(Math.random()*3)], total:amt, paidBy:s.name });
-    }
-    byStaff[s.name] = { count, subtotal };
-  });
-  mockRevenueHistory[offset] = { byStaff, txns };
-  return mockRevenueHistory[offset];
-}
-function dateLabelForOffset(offset){
-  const d = new Date(); d.setDate(d.getDate()-offset);
-  const weekdays = ['日','一','二','三','四','五','六'];
-  const label = `${pad(d.getMonth()+1)}/${pad(d.getDate())}（${weekdays[d.getDay()]}）`;
-  if(offset===0) return `今天 ${label}`;
-  if(offset===1) return `昨天 ${label}`;
-  return label;
-}
-
-/* ---------------- STAFF LOGIN ---------------- */
-const staffList = [
-  { id:'s1', name:'林經理', role:'manager', pin:'1234', status:'active', deviceAddedAt: Date.now()-30*86400000 },
-  { id:'s2', name:'陳店員', role:'staff', pin:'2345', status:'active', deviceAddedAt: Date.now()-30*86400000 },
-  { id:'s3', name:'黃工讀生', role:'staff', pin:'3456', status:'active', deviceAddedAt: Date.now()-30*86400000 },
-];
-let currentStaff = null;
-let deviceLoggedInList = []; // staff currently signed into THIS device (multi-user shared device)
-const wrongPinAttempts = {}; // staffId -> count, resets on success or lockout
-const attendanceLog = []; // { staff, action:'in'|'out', at } — stub for future attendance feature
-const pinFailureLog = []; // { staff, at } — stub; production writes this to a Sheet log worksheet
-const GRACE_PERIOD_MS = 3 * 24 * 60 * 60 * 1000; // 3 days to set a PIN before forced re-verification
-
-/* manager-configurable login methods; both can be enabled simultaneously */
-let loginSettings = { personal: true, shared: true };
-
-function showLockScreen(){
-  clearTimeout(idleTimer);
-  if(deviceLoggedInList.length === 0){
-    renderMethodChoice();
-  } else {
-    renderQuickSwitchList();
-  }
-  document.getElementById('loginModal').classList.add('show');
-}
-/* kept for backward compatibility with earlier calls in this file */
-function showLoginModal(){ showLockScreen(); }
-
-function renderQuickSwitchList(mode){
-  const modalBox = document.querySelector('.login-box');
-  mode = mode || 'switch';
-
-  if(mode === 'logout-pick'){
-    modalBox.innerHTML = `
-      <div class="login-title">選擇要登出的人員</div>
-      <div class="login-sub">登出後將從本裝置移除，需重新登入</div>
-      ${deviceLoggedInList.map(s=>`<button class="staff-option" data-staff="${s.id}">${s.name}<span style="opacity:0.5">登出</span></button>`).join('')}
-      <button class="staff-option" id="backToSwitchBtn" style="justify-content:center;border-style:dashed;">← 返回</button>
-    `;
-    modalBox.querySelectorAll('.staff-option[data-staff]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        const staff = deviceLoggedInList.find(s=>s.id===btn.getAttribute('data-staff'));
-        removeFromDevice(staff, true);
-      });
-    });
-    document.getElementById('backToSwitchBtn').addEventListener('click', ()=> renderQuickSwitchList('switch'));
-    return;
-  }
-
-  modalBox.innerHTML = `
-    <div class="login-title">切換帳號</div>
-    <div class="login-sub">此裝置目前已登入的人員</div>
-    ${deviceLoggedInList.map(s=>`
-      <button class="staff-option" data-staff="${s.id}">
-        ${s.name}${s.id===(currentStaff&&currentStaff.id)?' <span style="opacity:0.5;font-size:11px;">（使用中）</span>':''}
-        <span style="opacity:0.5;font-size:11px;">${s.role==='manager'?'主管':'員工'}</span>
-      </button>
-    `).join('')}
-    <button class="staff-option" id="addLoginBtn" style="justify-content:center;border-style:dashed;">＋ 新增登入</button>
-    <button class="staff-option" id="logoutPickBtn" style="justify-content:center;background:rgba(193,57,31,0.15);border-color:var(--red);color:#fff;">登出</button>
-  `;
-  modalBox.querySelectorAll('.staff-option[data-staff]').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const staff = deviceLoggedInList.find(s=>s.id===btn.getAttribute('data-staff'));
-      promptSwitchPin(staff);
-    });
-  });
-  document.getElementById('addLoginBtn').addEventListener('click', renderMethodChoice);
-  document.getElementById('logoutPickBtn').addEventListener('click', ()=> renderQuickSwitchList('logout-pick'));
-}
-
-function promptSwitchPin(staff){
-  if(!staff.pin){
-    const withinGrace = staff.deviceAddedAt && (Date.now() - staff.deviceAddedAt) < GRACE_PERIOD_MS;
-    if(withinGrace){
-      const pin = window.prompt(`${staff.name} 尚未設定密碼，請現在設定 4 位數登入密碼：`);
-      if(!pin || !/^\d{4}$/.test(pin)){ alert('密碼需為 4 位數字'); return; }
-      const confirmPin = window.prompt('請再次輸入密碼以確認：');
-      if(confirmPin !== pin){ alert('兩次密碼不一致'); return; }
-      staff.pin = pin;
-      currentStaff = staff;
-      document.getElementById('currentStaffName').textContent = staff.name;
-      document.getElementById('loginModal').classList.remove('show');
-      resetIdleTimer();
-      renderList();
-    } else {
-      alert(`${staff.name} 上機已超過3天未設定密碼，為帳戶安全須重新以登入方式驗證身份`);
-      removeFromDevice(staff, false);
-      renderMethodChoice();
-    }
-    return;
-  }
-
-  const pin = window.prompt(`請輸入 ${staff.name} 的登入密碼：`);
-  if(pin === null) return; // cancelled, stay on list
-  if(pin === staff.pin){
-    wrongPinAttempts[staff.id] = 0;
-    currentStaff = staff;
-    document.getElementById('currentStaffName').textContent = staff.name;
-    document.getElementById('loginModal').classList.remove('show');
-    resetIdleTimer();
-    renderList();
-    return;
-  }
-  wrongPinAttempts[staff.id] = (wrongPinAttempts[staff.id]||0) + 1;
-  pinFailureLog.push({ staff: staff.name, at: Date.now() }); // stub: production writes to Sheet log worksheet
-  if(wrongPinAttempts[staff.id] >= 3){
-    removeFromDevice(staff, false);
-    wrongPinAttempts[staff.id] = 0;
-    alert(`為帳戶安全，${staff.name} 帳號已被強制登出，請重新登入。`);
-    renderMethodChoice(); // fall back to full login (shows the shared-device code screen if enabled)
-  } else {
-    alert(`密碼錯誤，還有 ${3 - wrongPinAttempts[staff.id]} 次機會`);
-  }
-}
-
-function removeFromDevice(staff, askClock){
-  deviceLoggedInList = deviceLoggedInList.filter(s=>s.id!==staff.id);
-  if(askClock){
-    const doClock = confirm(`${staff.name}，要進行「下班打卡」嗎？`);
-    if(doClock){
-      attendanceLog.push({ staff: staff.name, action:'out', at: Date.now() });
-      showToastSafe(`${staff.name} 已下班打卡 ${fmtTime(Date.now())}`);
-    }
-  }
-  if(currentStaff && currentStaff.id === staff.id){
-    currentStaff = null;
-    document.getElementById('currentStaffName').textContent = '—';
-  }
-  showLockScreen();
-}
-
-function renderMethodChoice(){
-  const modalBox = document.querySelector('.login-box');
-  const methodCount = (loginSettings.personal?1:0) + (loginSettings.shared?1:0);
-
-  if(methodCount === 0){
-    modalBox.innerHTML = `<div class="login-title">尚未啟用任何登入方式</div><div class="login-sub">請聯絡主管設定登入方式</div>`;
-    return;
-  }
-
-  let html = `<div class="login-title">新增登入</div><div class="login-sub">請選擇登入方式</div>`;
-  if(loginSettings.personal){
-    html += `<button class="staff-option" id="personalLoginBtn" style="justify-content:center;">📱 個人手機登入（LINE 已驗證）</button>`;
-  }
-  if(loginSettings.shared){
-    html += `<button class="staff-option" id="sharedLoginBtn" style="justify-content:center;">🖥 公務機登入（登入碼）</button>`;
-  }
-  if(deviceLoggedInList.length > 0){
-    html += `<button class="staff-option" id="cancelAddLoginBtn" style="justify-content:center;border-style:dashed;">← 返回切換帳號</button>`;
-  }
-  html += `<div id="loginMethodBody" style="margin-top:14px;"></div>`;
-  modalBox.innerHTML = html;
-
-  if(loginSettings.personal) document.getElementById('personalLoginBtn').addEventListener('click', showPersonalLoginFlow);
-  if(loginSettings.shared) document.getElementById('sharedLoginBtn').addEventListener('click', showSharedLoginFlow);
-  if(deviceLoggedInList.length > 0) document.getElementById('cancelAddLoginBtn').addEventListener('click', ()=> renderQuickSwitchList('switch'));
-
-  if(!loginSettings.personal && loginSettings.shared) showSharedLoginFlow();
-  if(loginSettings.personal && !loginSettings.shared) showPersonalLoginFlow();
-}
-
-function showPersonalLoginFlow(){
-  const body = document.getElementById('loginMethodBody');
-  const candidates = staffList.filter(s=>s.status==='active' && !deviceLoggedInList.find(d=>d.id===s.id));
-  body.innerHTML = `
-    <div class="login-sub" style="margin-bottom:10px;">此裝置的 LINE 已驗證身份，請確認你是：</div>
-    ${candidates.map(s=>`<button class="staff-option" data-staff="${s.id}">${s.name}</button>`).join('')}
-    <button class="staff-option" id="registerStaffBtn" style="border-style:dashed;justify-content:center;">＋ 新增員工（於 LINE Bot 申請）</button>
-  `;
-  body.querySelectorAll('.staff-option[data-staff]').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const staff = staffList.find(s=>s.id===btn.getAttribute('data-staff'));
-      onIdentifiedForDeviceLogin(staff);
-    });
-  });
-  document.getElementById('registerStaffBtn').addEventListener('click', registerNewStaff);
-}
-
-function showSharedLoginFlow(){
-  const code = String(1000 + Math.floor(Math.random()*9000));
-  const body = document.getElementById('loginMethodBody');
-  body.innerHTML = `
-    <div class="login-sub" style="margin-bottom:6px;">請在 LINE Bot 中選擇「登入公務機」並輸入以下登入碼：</div>
-    <div style="text-align:center;font-family:'Space Mono',monospace;font-size:36px;font-weight:700;color:var(--paper);letter-spacing:0.15em;margin:12px 0;">${code}</div>
-    <div class="login-sub" style="margin-bottom:14px;">登入碼每次產生皆不同，僅限本次登入使用</div>
-    <button class="staff-option" id="checkLoginStatusBtn" style="justify-content:center;background:var(--red);border-color:var(--red);">🔄 檢查登入情形</button>
-  `;
-  document.getElementById('checkLoginStatusBtn').addEventListener('click', ()=>{
-    const name = window.prompt('（模擬 LINE Bot 端）已輸入登入碼的員工姓名，尚未有人輸入請留空：');
-    if(name === null) return;
-    if(!name.trim()){ alert('尚未偵測到有人輸入登入碼，請稍後再試一次'); return; }
-    let staff = staffList.find(s=>s.name===name.trim());
-    if(!staff){ alert('查無此員工，請先於「個人手機登入」完成 LINE 申請'); return; }
-    if(staff.status==='pending'){ alert(`${staff.name} 的申請尚未經主管審核通過，暫時無法登入`); return; }
-    onIdentifiedForDeviceLogin(staff);
-  });
-}
-
-function registerNewStaff(){
-  if(!confirm('新員工需先於 LINE Bot 完成資料填寫，是否已在 LINE Bot 完成申請？（此為模擬流程）')) return;
-  const name = window.prompt('請輸入 LINE Bot 申請時填寫的姓名：');
-  if(!name) return;
-  const newStaff = { id:'s'+(staffList.length+1), name, role:'staff', pin:null, status:'pending', deviceAddedAt:null };
-  staffList.push(newStaff);
-  alert(`已收到「${name}」的申請，需等待主管審核通過後才能登入裝置`);
-  updatePendingBadge();
-  showLockScreen();
-}
-
-function onIdentifiedForDeviceLogin(staff){
-  if(!staff.pin){
-    const wantsSetup = confirm(`是否要現在為 ${staff.name} 設定 4 位數登入密碼？\n\n（用於之後快速切換帳號；可先跳過，但需於 3 天內完成設定，逾期未設定將須重新以登入方式驗證身份）`);
-    if(wantsSetup){
-      const pin = window.prompt('請設定 4 位數登入密碼：');
-      if(pin && /^\d{4}$/.test(pin)){
-        const confirmPin = window.prompt('請再次輸入密碼以確認：');
-        if(confirmPin === pin) staff.pin = pin;
-        else alert('兩次密碼不一致，可於 3 天內再設定');
-      } else if(pin !== null){
-        alert('密碼需為 4 位數字，可於 3 天內再設定');
-      }
-    }
-  }
-  completeDeviceLogin(staff);
-}
-
-function completeDeviceLogin(staff){
-  const doClock = confirm(`${staff.name}，要進行「上班打卡」嗎？`);
-  if(doClock){
-    attendanceLog.push({ staff: staff.name, action:'in', at: Date.now() });
-    showToastSafe(`${staff.name} 已上班打卡 ${fmtTime(Date.now())}`);
-  }
-  if(!staff.deviceAddedAt) staff.deviceAddedAt = Date.now();
-  if(!deviceLoggedInList.find(s=>s.id===staff.id)) deviceLoggedInList.push(staff);
-  currentStaff = staff;
-  document.getElementById('currentStaffName').textContent = staff.name;
-  document.getElementById('loginModal').classList.remove('show');
-  resetIdleTimer();
-  renderList();
-}
-
-function showToastSafe(msg){ if(typeof showToast==='function') showToast(msg); }
-
-document.getElementById('switchAccountBtn').addEventListener('click', ()=>{
-  if(deviceLoggedInList.length === 0) return;
-  showLockScreen();
-});
-document.getElementById('loginSettingsBtn').addEventListener('click', openLoginSettings);
-updatePendingBadge();
-showLockScreen();
-
-/* ---------------- LOGIN METHOD SETTINGS (manager only) ---------------- */
-function openLoginSettings(){
-  if(!currentStaff || currentStaff.role !== 'manager'){ alert('僅主管以上權限可調整登入方式設定'); return; }
-
-  const pending = staffList.filter(s=>s.status==='pending');
-  if(pending.length){
-    pending.slice().forEach(s=>{
-      const approve = confirm(`員工申請審核\n\n姓名：${s.name}\n\n是否核准上機權限？（確定=核准，取消=駁回）`);
-      if(approve){
-        s.status = 'active';
-        showToastSafe(`已核准 ${s.name} 的上機申請`);
-      } else {
-        staffList.splice(staffList.indexOf(s), 1);
-        showToastSafe(`已駁回 ${s.name} 的申請`);
-      }
-    });
-    updatePendingBadge();
-  }
-
-  const personal = confirm('是否啟用「個人手機登入」？（確定=啟用，取消=停用）');
-  const shared = confirm('是否啟用「公務機登入碼」？（確定=啟用，取消=停用）');
-  if(!personal && !shared){ alert('至少需啟用一種登入方式，設定未變更'); return; }
-  loginSettings = { personal, shared };
-  showToastSafe('登入方式設定已更新');
-}
-
-function updatePendingBadge(){
-  const badge = document.getElementById('pendingBadge');
-  if(!badge) return;
-  const count = staffList.filter(s=>s.status==='pending').length;
-  if(count>0){ badge.style.display='flex'; badge.textContent = count; }
-  else badge.style.display='none';
-}
-
-/* ---------------- IDLE / LOCK-SCREEN AUTO-LOCK ---------------- */
-/* Preferred: lock the instant the screen turns off or the app/tab loses visibility.
-   Fallback: 5-minute inactivity timer for browsers/devices where visibility can't be detected.
-   Locking does NOT remove anyone from deviceLoggedInList — it just clears the active session
-   and shows the quick-switch list so any already-logged-in person can unlock with their PIN. */
-const IDLE_LIMIT_MS = 5 * 60 * 1000;
-let idleTimer;
-function lockScreen(reason){
-  if(!currentStaff) return;
-  showToastSafe(reason || '畫面已鎖定');
-  currentStaff = null;
-  document.getElementById('currentStaffName').textContent = '—';
-  showLockScreen();
-}
-function resetIdleTimer(){
-  clearTimeout(idleTimer);
-  if(!currentStaff) return;
-  idleTimer = setTimeout(()=> lockScreen('閒置逾時，畫面已鎖定'), IDLE_LIMIT_MS);
-}
-document.addEventListener('visibilitychange', ()=>{
-  if(document.hidden) lockScreen('偵測到畫面關閉／切換，已自動鎖定');
-});
-['mousemove','touchstart','keydown','click'].forEach(evt=> document.addEventListener(evt, resetIdleTimer));
-
-
-/* ---------------- CLOCK ---------------- */
-function tickClock(){
+/* ---------------- ITEM AVAILABILITY (staff "today sold out" toggle) ---------------- */
+/* Persisted per-day in localStorage so it naturally resets the next day. */
+function todayKey(){
   const d = new Date();
-  document.getElementById('clock').textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  return `soldout-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
 }
-tickClock();
-setInterval(tickClock, 1000);
+function loadSoldOut(){
+  try{
+    const raw = localStorage.getItem(todayKey());
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch(e){ return new Set(); }
+}
+function saveSoldOut(){
+  try{ localStorage.setItem(todayKey(), JSON.stringify([...soldOutItems])); } catch(e){}
+}
+let soldOutItems = loadSoldOut();
 
-/* re-render elapsed time + move urgent flags every 20s without full rebuild-flicker */
-setInterval(()=> renderList(), 20000);
+/* read ?table= param */
+const params = new URLSearchParams(window.location.search);
+if(params.get('table')){
+  state.tableNum = params.get('table');
+  state.orderType = 'dinein';
+}
 
 /* ---------------- RENDER ---------------- */
-function elapsedMinutes(order){ return Math.floor((Date.now()-order.createdAt)/60000); }
+function t(key){ return i18nStrings[state.lang][key] || key; }
+function itemLabel(it){ return it.zh; }
+function itemSubLabel(it){ return state.lang==='zh' ? it.en : (it[state.lang] || it.en); }
+function catLabel(c){ return c[state.lang] || c.zh; }
 
-function orderMatchesTab(order, tab){
-  if(tab==='attention') return order.prepStatus==='pendingconfirm' || order.prepStatus==='new';
-  if(tab==='making') return order.prepStatus==='making';
-  if(tab==='served') return order.prepStatus==='served' && order.payStatus==='unpaid';
-  if(tab==='paid') return order.payStatus==='paid';
-  return false;
+/* ---- Pricing rules ----
+   - tea / milktea categories have M/L sizes for dine-in & delivery
+   - all other categories have a single listed price (treated as the "M" reference price)
+   - takeout is always a single fixed size, priced at floor(M_price / 2)
+*/
+function basePriceM(it){ return it.sizes ? it.sizes.M : it.price; }
+function takeoutPrice(it){ return Math.floor(basePriceM(it)/2/5)*5; }
+function dineinPrice(it, size){ return it.sizes ? it.sizes[size||'M'] : it.price; }
+function displayPriceRange(it){
+  if(state.orderType==='takeout') return `$${takeoutPrice(it)}`;
+  if(it.sizes) return `$${it.sizes.M}–${it.sizes.L}`;
+  return `$${it.price}`;
 }
 
-function updateTabBadge(){
-  const badge = document.getElementById('badgeAttention');
-  if(!badge) return;
-  const count = orders.filter(o=>orderMatchesTab(o,'attention')).length;
-  if(count>0){ badge.style.display='flex'; badge.textContent = count; }
-  else badge.style.display='none';
+function applyI18n(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    el.textContent = t(el.getAttribute('data-i18n'));
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
+    el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
+  });
+  document.getElementById('tableBadge').classList.toggle('show', state.orderType==='dinein' && state.tableNum);
+  document.getElementById('tableNum').textContent = state.tableNum || '';
 }
 
-function typeLabel(type){ return type==='dinein' ? '內用' : type==='takeout' ? '外帶' : '外送'; }
-
-function renderOrderCard(order){
-  const elapsed = elapsedMinutes(order);
-  const urgent = elapsed >= 10 && order.prepStatus!=='served';
-  const metaSub = [];
-  if(order.type==='dinein'){
-    metaSub.push(`<b>${order.table}</b> 桌`);
-    metaSub.push(`<b>${order.headcount}</b> 人`);
-    if(order.guest) metaSub.push(`<span class="guest-flag">訪客模式</span>`);
-    const minTotal = order.headcount * (isWeekendNow()?70:50);
-    if(order.total < minTotal) metaSub.push(`<span class="lowspend-flag">⚠ 未達低消 (需$${minTotal})</span>`);
-  }
-
-  let actionsHtml = '';
-  const actionsEnabled = (typeof ORDER_ACTIONS_ENABLED === 'undefined') || ORDER_ACTIONS_ENABLED;
-  const statusLabelMap = {
-    pendingconfirm:'待確認（外送）', new:'待接單', making:'製作中',
-    served: order.payStatus==='paid' ? '已結帳' : '已出餐／待結帳',
-  };
-  if(!actionsEnabled){
-    actionsHtml = `<div class="staff-trail" style="padding-top:10px;font-weight:600;">狀態：${statusLabelMap[order.prepStatus]||order.prepStatus}</div>`;
-  } else if(order.prepStatus === 'pendingconfirm'){
-    actionsHtml = `
-      <div class="order-actions">
-        <button class="action-btn confirm" data-act="confirmDelivery" data-code="${order.code}">確認外送訂單</button>
-      </div>`;
-  } else if(order.prepStatus === 'new'){
-    actionsHtml = `
-      <div class="order-actions">
-        <button class="action-btn primary" data-act="accept" data-code="${order.code}">接單 → 開始製作</button>
-      </div>`;
-  } else if(order.prepStatus === 'making'){
-    actionsHtml = `
-      <div class="order-actions">
-        <button class="action-btn primary" data-act="serve" data-code="${order.code}">完成製作 → 已出餐</button>
-      </div>`;
-  } else if(order.prepStatus === 'served' && order.payStatus === 'unpaid'){
-    actionsHtml = `
-      <div class="order-actions">
-        <button class="action-btn pay" data-act="pay" data-code="${order.code}">現金結帳 → 已結帳</button>
-      </div>`;
-  } else if(order.payStatus === 'paid'){
-    actionsHtml = `<div class="paid-badge">✓ 已結帳完成</div>`;
-  }
-
-  const langLabelMap = { en:'EN', ja:'日本語', ko:'한국어' };
-  const customerHtml = order.customer ? `
-    <div class="customer-row">
-      <span class="customer-name">${displayCustomerName(order.customer)}</span>
-      ${order.customer.title ? `<span class="customer-title">${order.customer.title}</span>` : ''}
-      ${order.customer.customName
-        ? `<span class="customer-source custom-tag">自訂</span>`
-        : `<span class="customer-source ${order.customer.source}">${order.customer.source==='line'?'LINE':order.customer.source==='custom'?'自訂':'訪客'}</span>`}
-      ${order.lang && order.lang!=='zh' ? `<span class="lang-badge">🌐 ${langLabelMap[order.lang]||order.lang}</span>` : ''}
-      <span class="staff-note ${order.staffNote?'':'empty'}" data-code="${order.code}">${order.staffNote ? order.staffNote : '＋ 加備註'}</span>
-    </div>` : '';
-
-  const itemRows = order.items.map((it,idx)=>`
-    <tr class="${order.items.length>=2 && idx%2===1 ? 'zebra':''}" data-row="${it.rowId}">
-      <td class="col-idx">${idx+1}</td>
-      <td class="col-name">${it.name}</td>
-      <td class="col-size">${it.size || '—'}</td>
-      <td class="col-qty">${it.qty}</td>
-      <td class="col-amount">$${it.price*it.qty}</td>
-      <td class="col-icesweet" data-code="${order.code}" data-row="${it.rowId}">
-        <span class="icesweet-display">${it.ice} / ${it.sweet}${it.adjusted?`<span class="adjusted-tag" data-code="${order.code}" data-row="${it.rowId}">已調整</span>`:''}<span class="edit-hint">✎ 調整</span></span>
-      </td>
-    </tr>
+function renderCatTabs(){
+  const wrap = document.getElementById('catTabs');
+  wrap.innerHTML = categories.map(c=>`
+    <div class="cat-tab ${c.id===state.activeCat?'active':''}" data-cat="${c.id}">${catLabel(c)}</div>
   `).join('');
-
-  return `
-    <div class="order-card type-${order.type} status-${order.prepStatus}" data-code="${order.code}">
-      <div class="order-card-top">
-        <div class="order-code-block">
-          <div class="order-code">${order.code}</div>
-          <div class="order-type-tag ${order.type}">${typeLabel(order.type)}</div>
-        </div>
-        <div class="order-meta">
-          <div class="${urgent?'order-elapsed urgent':'order-elapsed'}">${elapsed} 分鐘前</div>
-        </div>
-      </div>
-      ${customerHtml}
-      ${metaSub.length ? `<div class="order-sub">${metaSub.join('　')}</div>` : ''}
-      <div class="order-items">
-        <table class="item-table">
-          <thead>
-            <tr><th>項次</th><th>品名</th><th>杯型</th><th>數量</th><th>金額</th><th>冰/糖</th></tr>
-          </thead>
-          <tbody>${itemRows}</tbody>
-        </table>
-      </div>
-      <div class="order-total-row">
-        <div class="order-total-label">訂單總額</div>
-        <div class="order-total-value num">$${order.total}</div>
-      </div>
-      ${buildTrailHtml(order)}
-      ${actionsHtml}
-    </div>
-  `;
-}
-
-function displayCustomerName(customer){ return customer.customName || customer.lineName || '—'; }
-
-function isWeekendNow(){ const d = new Date().getDay(); return d===0 || d===6; }
-
-function buildTrailHtml(order){
-  const parts = [];
-  if(order.confirmedBy) parts.push(`確認 ${order.confirmedBy} ${fmtTime(order.confirmedAt)}`);
-  if(order.acceptedBy) parts.push(`接單 ${order.acceptedBy} ${fmtTime(order.acceptedAt)}`);
-  if(order.servedBy) parts.push(`出餐 ${order.servedBy} ${fmtTime(order.servedAt)}`);
-  if(order.paidBy) parts.push(`結帳 ${order.paidBy} ${fmtTime(order.paidAt)}`);
-  if(parts.length===0) return '';
-  /* flag when different staff handled different stages (shift handoff) */
-  const staffSet = new Set([order.confirmedBy, order.acceptedBy, order.servedBy, order.paidBy].filter(Boolean));
-  const handoff = staffSet.size > 1;
-  return `<div class="staff-trail ${handoff?'handoff':''}">${parts.join(' → ')}</div>`;
-}
-
-function renderList(){
-  const wrap = document.getElementById('orderList');
-
-  if(state.tab === 'revenue'){
-    wrap.innerHTML = renderRevenueView();
-    updateTabBadge();
-    const dateSel = document.getElementById('revenueDateSelect');
-    if(dateSel) dateSel.addEventListener('change', ()=>{ state.revenueOffset = parseInt(dateSel.value); renderList(); });
-    return;
-  }
-
-  if(state.tab === 'overview'){
-    wrap.innerHTML = renderOverviewView();
-    updateTabBadge();
-    const sortSel = document.getElementById('overviewSortSelect');
-    if(sortSel) sortSel.addEventListener('change', ()=>{ state.overviewSort = sortSel.value; renderList(); });
-    bindActionButtons();
-    return;
-  }
-
-  if(['attendance','feedback','satisfaction'].includes(state.tab)){
-    const labels = { attendance:'員工出勤', feedback:'客戶留言', satisfaction:'滿意度' };
-    wrap.innerHTML = `
-      <div class="empty-state" style="padding:80px 24px;">
-        <div style="font-size:15px;font-weight:700;color:var(--ink);margin-bottom:8px;">${labels[state.tab]}功能規劃中</div>
-        <div>此功能尚未實作，預留分頁位置，之後接上後端後會補上。</div>
-      </div>`;
-    updateTabBadge();
-    return;
-  }
-}
-
-function renderOverviewView(){
-  const todayOrders = orders.slice(); // demo data is all "today" by construction
-  const sortMode = state.overviewSort || 'time';
-  const statusRank = { pendingconfirm:0, new:1, making:2, served:3 };
-  const rankOf = (o)=> o.payStatus==='paid' ? 4 : (statusRank[o.prepStatus] ?? 5);
-
-  const sorted = todayOrders.slice().sort((a,b)=>{
-    if(sortMode==='time') return b.createdAt - a.createdAt;
-    return rankOf(a) - rankOf(b) || b.createdAt - a.createdAt;
-  });
-
-  const filtered = sorted.filter(o=> state.filter==='all' || o.type===state.filter);
-
-  const controlsHtml = `
-    <div style="padding:14px 16px 0;">
-      <select id="overviewSortSelect" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:4px;background:#fff;font-size:13px;">
-        <option value="time" ${sortMode==='time'?'selected':''}>依訂單時間排序（最新在前）</option>
-        <option value="status" ${sortMode==='status'?'selected':''}>依處理情形排序（待處理優先）</option>
-      </select>
-    </div>`;
-
-  if(filtered.length===0){
-    return controlsHtml + `<div class="empty-state">今日尚無訂單</div>`;
-  }
-  return controlsHtml + `<div style="padding:14px 16px 20px;display:flex;flex-direction:column;gap:12px;">${filtered.map(renderOrderCard).join('')}</div>`;
-}
-
-function renderRevenueView(){
-  const offset = state.revenueOffset || 0;
-  let byStaff, txnRows, total, count;
-
-  if(offset === 0){
-    const paidOrders = orders.filter(o=>o.payStatus==='paid');
-    total = paidOrders.reduce((s,o)=>s+o.total,0);
-    count = paidOrders.length;
-    byStaff = {};
-    paidOrders.forEach(o=>{
-      const key = o.paidBy || '未登入';
-      if(!byStaff[key]) byStaff[key] = { count:0, subtotal:0 };
-      byStaff[key].count++;
-      byStaff[key].subtotal += o.total;
-    });
-    txnRows = paidOrders.slice().sort((a,b)=>b.createdAt-a.createdAt).map(o=>({
-      code:o.code, type:typeLabel(o.type), customer: o.customer?displayCustomerName(o.customer):'—', total:o.total, paidBy:o.paidBy||'未登入'
-    }));
-  } else {
-    const data = generateMockDayData(offset);
-    byStaff = data.byStaff;
-    total = Object.values(byStaff).reduce((s,d)=>s+d.subtotal,0);
-    count = Object.values(byStaff).reduce((s,d)=>s+d.count,0);
-    txnRows = data.txns.map(t=>({code:t.code, type:typeLabel(t.type), customer:'—', total:t.total, paidBy:t.paidBy}));
-  }
-
-  const isManager = currentStaff && currentStaff.role==='manager';
-  if(!isManager && currentStaff){
-    const mine = byStaff[currentStaff.name] || {count:0, subtotal:0};
-    byStaff = { [currentStaff.name]: mine };
-    total = mine.subtotal;
-    count = mine.count;
-    txnRows = txnRows.filter(t=>t.paidBy===currentStaff.name);
-  }
-
-  const dateOptions = Array.from({length:7},(_,i)=>i).map(i=>`<option value="${i}" ${i===offset?'selected':''}>${dateLabelForOffset(i)}</option>`).join('');
-
-  const staffRows = Object.entries(byStaff).sort((a,b)=>b[1].subtotal-a[1].subtotal).map(([name,d])=>`
-    <tr><td>${name}</td><td class="num-col">${d.count}</td><td class="num-col">$${d.subtotal}</td></tr>
-  `).join('') || `<tr><td colspan="3" style="text-align:center;color:var(--ink-soft);padding:16px 0">尚無結帳紀錄</td></tr>`;
-
-  const txnRowsHtml = txnRows.map(t=>`
-    <tr><td class="code-col">${t.code}</td><td>${t.type}</td><td>${t.customer}</td><td class="num-col">$${t.total}</td><td>${t.paidBy}</td></tr>
-  `).join('') || `<tr><td colspan="5" style="text-align:center;color:var(--ink-soft);padding:16px 0">尚無資料</td></tr>`;
-
-  return `
-    <div class="revenue-wrap">
-      <div style="margin-bottom:14px;">
-        <select id="revenueDateSelect" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:4px;background:#fff;font-size:13px;">${dateOptions}</select>
-      </div>
-      <div class="revenue-total-card">
-        <div class="revenue-total-label">${isManager?'全店':'我的'}累計營業額</div>
-        <div class="revenue-total-value num">$${total}</div>
-        <div class="revenue-total-sub">共 ${count} 筆已結帳訂單${!isManager?'（僅顯示本人數據，主管以上可見全員工）':''}</div>
-      </div>
-
-      ${isManager ? `
-      <div class="revenue-section-title">依員工小計</div>
-      <table class="staff-summary-table">
-        <thead><tr><th>員工</th><th>筆數</th><th>小計</th></tr></thead>
-        <tbody>${staffRows}</tbody>
-      </table>` : ''}
-
-      <div class="revenue-section-title">結帳明細</div>
-      <table class="txn-table">
-        <thead><tr><th>編號</th><th>類型</th><th>顧客</th><th>金額</th><th>經手員工</th></tr></thead>
-        <tbody>${txnRowsHtml}</tbody>
-      </table>
-    </div>
-  `;
-}
-
-function bindActionButtons(){
-  document.querySelectorAll('[data-act]').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const code = btn.getAttribute('data-code');
-      const act = btn.getAttribute('data-act');
-      const order = orders.find(o=>o.code===code);
-      if(!order) return;
-      const staffName = currentStaff ? currentStaff.name : '未登入';
-      const now = Date.now();
-      if(act==='confirmDelivery'){ order.prepStatus='new'; order.confirmedBy=staffName; order.confirmedAt=now; showToast(`${code} 已確認，進入待接單`); }
-      if(act==='accept'){ order.prepStatus='making'; order.acceptedBy=staffName; order.acceptedAt=now; showToast(`${code} 已接單，開始製作`); }
-      if(act==='serve'){ order.prepStatus='served'; order.servedBy=staffName; order.servedAt=now; showToast(`${code} 已出餐`); }
-      if(act==='pay'){ order.payStatus='paid'; order.paidBy=staffName; order.paidAt=now; showToast(`${code} 已完成結帳`); }
-      renderList();
-    });
-  });
-  bindIceSweetEditors();
-  bindAdjustedTags();
-  bindStaffNotes();
-}
-
-function bindStaffNotes(){
-  document.querySelectorAll('.staff-note').forEach(el=>{
+  wrap.querySelectorAll('.cat-tab').forEach(el=>{
     el.addEventListener('click', ()=>{
-      const code = el.getAttribute('data-code');
-      const order = orders.find(o=>o.code===code);
-      if(!order) return;
-      const note = window.prompt('備註內容（例如：不吃冰、常坐窗邊、對堅果過敏）：', order.staffNote || '');
-      if(note === null) return;
-      order.staffNote = note.trim() || null;
-      renderList();
+      state.activeCat = el.getAttribute('data-cat');
+      renderCatTabs();
+      scrollToSection(state.activeCat);
     });
   });
 }
 
-function bindIceSweetEditors(){
-  document.querySelectorAll('.col-icesweet').forEach(td=>{
-    td.addEventListener('click', function(e){
-      if(e.target.closest('.adjusted-tag')) return;
-      if(td.classList.contains('editing')) return;
-      td.classList.add('editing');
-      const code = td.getAttribute('data-code');
-      const rowId = td.getAttribute('data-row');
-      const order = orders.find(o=>o.code===code);
-      const item = order.items.find(i=>i.rowId===rowId);
-      td.innerHTML = `
-        <div class="icesweet-edit">
-          <select class="iceSel">${iceOptions.map(o=>`<option ${o===item.ice?'selected':''}>${o}</option>`).join('')}</select>
-          <select class="sweetSel">${sweetOptions.map(o=>`<option ${o===item.sweet?'selected':''}>${o}</option>`).join('')}</select>
-          <button class="saveBtn">✓</button>
-        </div>`;
-      td.querySelector('.saveBtn').addEventListener('click', (ev)=>{
-        ev.stopPropagation();
-        const newIce = td.querySelector('.iceSel').value;
-        const newSweet = td.querySelector('.sweetSel').value;
-        if(newIce !== item.ice || newSweet !== item.sweet){
-          if(!item.adjustHistory) item.adjustHistory = [];
-          item.adjustHistory.push({
-            from:{ice:item.ice, sweet:item.sweet}, to:{ice:newIce, sweet:newSweet},
-            by: currentStaff ? currentStaff.name : '未登入', at: Date.now()
-          });
-          item.adjusted = true;
-          item.ice = newIce; item.sweet = newSweet;
-          showToast(`${code} 第${order.items.indexOf(item)+1}項冰糖已更新`);
-        }
-        renderList();
+function scrollToSection(catId){
+  const el = document.getElementById('sec-'+catId);
+  if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function renderMenu(){
+  const wrap = document.getElementById('menuContainer');
+  wrap.innerHTML = categories.map(c=>{
+    const catItems = items.filter(i=>i.cat===c.id);
+    return `
+      <div id="sec-${c.id}">
+        <div class="section-title">
+          <div class="zh">${catLabel(c)}</div>
+          <div class="en">${c.en}</div>
+        </div>
+        <div class="item-list">
+          ${catItems.map(it=>{
+            const isSoldOut = soldOutItems.has(it.id);
+            let rightHtml;
+            if(state.manageMode){
+              rightHtml = `<button class="item-toggle ${isSoldOut?'off':''}" data-item="${it.id}" data-toggle="1"></button>`;
+            } else if(isSoldOut){
+              rightHtml = `<span class="sold-out-tag" data-i18n="menu.soldOut">售完</span>`;
+            } else {
+              rightHtml = `<div class="item-price num">${displayPriceRange(it)}</div><button class="item-add" data-item="${it.id}">+</button>`;
+            }
+            return `
+            <div class="item-card ${isSoldOut && !state.manageMode ? 'sold-out':''}" data-item="${it.id}">
+              <div class="item-main">
+                <div class="item-name-row">
+                  <div class="item-name">${itemLabel(it)}</div>
+                  ${it.temp==='hot'?'<span class="tag hot">HOT</span>':''}
+                  ${it.temp==='cold'?'<span class="tag cold">COLD</span>':''}
+                  ${it.temp==='both'?'<span class="tag hot">H</span><span class="tag cold">C</span>':''}
+                </div>
+                <div class="item-en">${itemSubLabel(it)}</div>
+              </div>
+              ${rightHtml}
+            </div>
+          `;}).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  if(state.manageMode){
+    wrap.querySelectorAll('[data-toggle]').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const id = el.getAttribute('data-item');
+        if(soldOutItems.has(id)) soldOutItems.delete(id); else soldOutItems.add(id);
+        saveSoldOut();
+        renderMenu();
       });
     });
-  });
-}
+    return;
+  }
 
-function bindAdjustedTags(){
-  document.querySelectorAll('.adjusted-tag').forEach(tag=>{
-    tag.addEventListener('click', (e)=>{
-      e.stopPropagation();
-      const code = tag.getAttribute('data-code');
-      const rowId = tag.getAttribute('data-row');
-      const order = orders.find(o=>o.code===code);
-      const item = order.items.find(i=>i.rowId===rowId);
-      showAdjustHistory(order, item);
+  wrap.querySelectorAll('.item-card:not(.sold-out), .item-add').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      const id = el.getAttribute('data-item');
+      openItemSheet(id);
     });
   });
 }
 
-function showAdjustHistory(order, item){
-  const rows = (item.adjustHistory||[]).map(h=>`
-    <div style="padding:10px 0;border-bottom:1px solid var(--line);font-size:12.5px;">
-      <div style="font-weight:600;">${fmtFullTime(h.at)} · ${h.by}</div>
-      <div style="color:var(--ink-soft);margin-top:2px;">${h.from.ice} / ${h.from.sweet} → ${h.to.ice} / ${h.to.sweet}</div>
-    </div>`).join('');
-  document.getElementById('historyResult').innerHTML = `
-    <div style="padding:4px 16px 20px;">
-      <div style="font-size:15px;font-weight:700;margin-bottom:4px;">${item.name} 調整紀錄</div>
-      <div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:8px;">訂單 ${order.code}</div>
-      ${rows || '<div style="color:var(--ink-soft);padding:12px 0;">尚無調整紀錄</div>'}
-    </div>`;
-  document.getElementById('historyOverlay').classList.add('show');
-}
-function fmtFullTime(ts){ const d = new Date(ts); return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; }
+function openItemSheet(itemId){
+  const it = items.find(i=>i.id===itemId);
+  state.currentItem = it;
+  state.currentSweet = 0;
+  state.currentIce = 0;
+  state.currentQty = 1;
+  state.currentSize = 'M';
+  document.getElementById('optItemName').textContent = itemLabel(it);
+  document.getElementById('optItemSub').textContent = itemSubLabel(it);
 
-/* ---------------- Tabs & filters ---------------- */
-document.getElementById('tabs').querySelectorAll('.tab').forEach(el=>{
-  el.addEventListener('click', ()=>{
-    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-    el.classList.add('active');
-    state.tab = el.getAttribute('data-tab');
-    document.getElementById('filterRow').style.display = state.tab==='overview' ? 'flex' : 'none';
-    renderList();
-  });
-});
-document.getElementById('filterRow').querySelectorAll('.filter-chip').forEach(el=>{
-  el.addEventListener('click', ()=>{
-    document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
-    el.classList.add('active');
-    state.filter = el.getAttribute('data-filter');
-    renderList();
-  });
-});
+  const isTakeout = state.orderType === 'takeout';
+  const sizeGroup = document.getElementById('sizeGroup');
+  const takeoutNotice = document.getElementById('takeoutSizeNotice');
 
-/* ---------------- Search ---------------- */
-function extractSeq(code){
-  const parts = code.replace(/^D-/,'').split('-');
-  return parseInt(parts[1], 10);
-}
-
-function doSearch(){
-  const raw = document.getElementById('searchInput').value.trim();
-  const resultWrap = document.getElementById('searchResult');
-  if(!raw){ return; }
-
-  let found;
-  if(/^\d{1,3}$/.test(raw)){
-    /* short numeric input: default to searching today's sequence number */
-    const n = parseInt(raw, 10);
-    found = orders.find(o => extractSeq(o.code) === n);
+  if(it.sizes && !isTakeout){
+    sizeGroup.style.display = 'block';
+    takeoutNotice.style.display = 'none';
+    document.getElementById('sizeChoices').innerHTML = `
+      <div class="opt-choice selected" data-size="M">${t('size.M')} $${it.sizes.M}</div>
+      <div class="opt-choice" data-size="L">${t('size.L')} $${it.sizes.L}</div>
+    `;
+    document.getElementById('sizeChoices').querySelectorAll('.opt-choice').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        document.getElementById('sizeChoices').querySelectorAll('.opt-choice').forEach(x=>x.classList.remove('selected'));
+        el.classList.add('selected');
+        state.currentSize = el.getAttribute('data-size');
+        updateQtyUI();
+      });
+    });
+  } else if(isTakeout){
+    sizeGroup.style.display = 'none';
+    takeoutNotice.style.display = 'block';
   } else {
-    const q = raw.toUpperCase();
-    found = orders.find(o => o.code.toUpperCase() === q || o.code.toUpperCase().endsWith('-'+q) || o.code.toUpperCase().endsWith(q));
+    sizeGroup.style.display = 'none';
+    takeoutNotice.style.display = 'none';
   }
 
-  if(!found){
-    resultWrap.innerHTML = `<div class="empty-state">找不到編號「${raw}」的訂單（預設查詢今日訂單），請確認輸入是否正確</div>`;
-  } else {
-    resultWrap.innerHTML = renderOrderCard(found);
-  }
-  document.getElementById('searchOverlay').classList.add('show');
-  bindActionButtons();
+  buildChoiceGroup('sweetnessChoices', sweetnessOpts[state.lang], 'sweet');
+  buildChoiceGroup('iceChoices', iceOpts[state.lang], 'ice');
+  updateQtyUI();
+  openOverlay('itemOverlay');
 }
-document.getElementById('searchBtn').addEventListener('click', doSearch);
-document.getElementById('searchInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter') doSearch(); });
-document.getElementById('searchClose').addEventListener('click', ()=> document.getElementById('searchOverlay').classList.remove('show'));
-document.getElementById('searchOverlay').addEventListener('click', (e)=>{ if(e.target.id==='searchOverlay') e.currentTarget.classList.remove('show'); });
-document.getElementById('historyClose').addEventListener('click', ()=> document.getElementById('historyOverlay').classList.remove('show'));
-document.getElementById('historyOverlay').addEventListener('click', (e)=>{ if(e.target.id==='historyOverlay') e.currentTarget.classList.remove('show'); });
 
-/* ---------------- Demo controls ---------------- */
-document.getElementById('demoAddDinein').addEventListener('click', ()=>{ const o=makeOrder('dinein'); showToast(`新訂單 ${o.code}（內用）`); renderList(); });
-document.getElementById('demoAddTakeout').addEventListener('click', ()=>{ const o=makeOrder('takeout'); showToast(`新訂單 ${o.code}（外帶）`); renderList(); });
-document.getElementById('demoAddDelivery').addEventListener('click', ()=>{ const o=makeOrder('delivery'); showToast(`新訂單 ${o.code}（外送，待確認）`); renderList(); });
+function currentUnitPrice(){
+  const it = state.currentItem;
+  if(state.orderType === 'takeout') return takeoutPrice(it);
+  return dineinPrice(it, state.currentSize);
+}
 
+function buildChoiceGroup(elId, options, kind){
+  const wrap = document.getElementById(elId);
+  wrap.innerHTML = options.map((o,idx)=>`<div class="opt-choice ${idx===0?'selected':''}" data-idx="${idx}">${o}</div>`).join('');
+  wrap.querySelectorAll('.opt-choice').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      wrap.querySelectorAll('.opt-choice').forEach(x=>x.classList.remove('selected'));
+      el.classList.add('selected');
+      if(kind==='sweet') state.currentSweet = parseInt(el.getAttribute('data-idx'));
+      if(kind==='ice') state.currentIce = parseInt(el.getAttribute('data-idx'));
+    });
+  });
+}
+function renderOptChoices(){} // placeholder, replaced by buildChoiceGroup
+
+function updateQtyUI(){
+  document.getElementById('qtyNum').textContent = state.currentQty;
+  const price = currentUnitPrice() * state.currentQty;
+  document.getElementById('addToCartPrice').textContent = '$'+price;
+}
+
+document.getElementById('qtyMinus').addEventListener('click', ()=>{
+  if(state.currentQty>1) state.currentQty--;
+  updateQtyUI();
+});
+document.getElementById('qtyPlus').addEventListener('click', ()=>{
+  state.currentQty++;
+  updateQtyUI();
+});
+
+document.getElementById('addToCartBtn').addEventListener('click', ()=>{
+  const it = state.currentItem;
+  const hasSize = it.sizes && state.orderType!=='takeout';
+  const foreignLang = state.lang !== 'zh' ? state.lang : null;
+
+  state.cart.push({
+    itemId: it.id,
+    name: it.zh,
+    nameForeign: foreignLang ? (it[foreignLang]||it.en) : null,
+    price: currentUnitPrice(),
+    size: hasSize ? sweetnessLabelFor('size', 'zh', state.currentSize) : null,
+    sizeForeign: hasSize && foreignLang ? sweetnessLabelFor('size', foreignLang, state.currentSize) : null,
+    qty: state.currentQty,
+    sweet: sweetnessOpts.zh[state.currentSweet],
+    sweetForeign: foreignLang ? sweetnessOpts[foreignLang][state.currentSweet] : null,
+    ice: iceOpts.zh[state.currentIce],
+    iceForeign: foreignLang ? iceOpts[foreignLang][state.currentIce] : null,
+  });
+  closeOverlay('itemOverlay');
+  renderCartUI();
+  showToast(state.lang==='zh' ? '已加入購物車' : state.lang==='en' ? 'Added to cart' : state.lang==='ja' ? 'カートに追加しました' : '장바구니에 담았습니다');
+});
+function sweetnessLabelFor(kind, lang, sizeKey){
+  if(kind==='size') return lang==='zh' ? (sizeKey==='M'?'中杯':'大杯') : (i18nStrings[lang]['size.'+sizeKey] || sizeKey);
+}
+
+function cartTotal(){
+  return state.cart.reduce((sum,c)=>sum + c.price*c.qty, 0);
+}
+function cartCount(){
+  return state.cart.reduce((sum,c)=>sum + c.qty, 0);
+}
+
+function bilingualNameOptsHtml(c, nameClass, optsClass, showQty){
+  const qtyStr = showQty ? ` × ${c.qty}` : '';
+  let html = `<div class="${nameClass}">${c.name}${c.size?` <span style="font-weight:400;color:var(--ink-soft)">(${c.size})</span>`:''}${qtyStr}</div>
+    <div class="${optsClass}">${c.sweet} · ${c.ice}</div>`;
+  if(c.nameForeign){
+    html += `<div class="${nameClass}" style="margin-top:6px;">${c.nameForeign}${c.sizeForeign?` <span style="font-weight:400;color:var(--ink-soft)">(${c.sizeForeign})</span>`:''}${qtyStr}</div>
+    <div class="${optsClass}">${c.sweetForeign} · ${c.iceForeign}</div>`;
+  }
+  return html;
+}
+
+function renderCartUI(){
+  const count = cartCount();
+  const total = cartTotal();
+  document.getElementById('cartBar').classList.toggle('show', count>0);
+  document.getElementById('cartCount').textContent = count;
+  document.getElementById('cartBarTotal').textContent = '$'+total;
+  document.getElementById('cartTotal').textContent = '$'+total;
+  document.getElementById('checkoutTotal').textContent = '$'+total;
+
+  const list = document.getElementById('cartList');
+  if(state.cart.length===0){
+    list.innerHTML = `<div style="text-align:center;padding:30px 0;color:var(--ink-soft);font-size:13px;">${state.lang==='zh'?'購物車是空的':state.lang==='en'?'Your cart is empty':'カートは空です'}</div>`;
+  } else {
+    list.innerHTML = state.cart.map((c,idx)=>`
+      <div class="cart-item">
+        <div class="cart-item-info">
+          ${bilingualNameOptsHtml(c, 'cart-item-name', 'cart-item-opts')}
+        </div>
+        <div class="cart-item-right">
+          <div class="cart-item-price num">$${c.price*c.qty}</div>
+          <div class="mini-qty">
+            <button data-act="minus" data-idx="${idx}">−</button>
+            <span class="mono" style="font-size:13px;">${c.qty}</span>
+            <button data-act="plus" data-idx="${idx}">+</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+    list.querySelectorAll('.mini-qty button').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const idx = parseInt(btn.getAttribute('data-idx'));
+        const act = btn.getAttribute('data-act');
+        if(act==='plus') state.cart[idx].qty++;
+        else{
+          state.cart[idx].qty--;
+          if(state.cart[idx].qty<=0) state.cart.splice(idx,1);
+        }
+        renderCartUI();
+      });
+    });
+  }
+}
+
+/* ---------------- Overlays ---------------- */
+function openOverlay(id){ document.getElementById(id).classList.add('show'); }
+function closeOverlay(id){ document.getElementById(id).classList.remove('show'); }
+document.querySelectorAll('[data-close]').forEach(btn=>{
+  btn.addEventListener('click', ()=> closeOverlay(btn.getAttribute('data-close')));
+});
+document.querySelectorAll('.overlay').forEach(ov=>{
+  ov.addEventListener('click', (e)=>{ if(e.target===ov) ov.classList.remove('show'); });
+});
+
+document.getElementById('cartBar').addEventListener('click', ()=>{
+  renderCartUI();
+  openOverlay('cartOverlay');
+});
+
+document.getElementById('goCheckoutBtn').addEventListener('click', ()=>{
+  closeOverlay('cartOverlay');
+  setupCheckout();
+  openOverlay('checkoutOverlay');
+});
+
+function isWeekend(){ const d = new Date().getDay(); return d===0 || d===6; }
+function minSpendPerHead(){ return isWeekend() ? 70 : 50; }
+
+function populateDineinSelects(){
+  const tableSel = document.getElementById('tableSelect');
+  tableSel.innerHTML = `<option value="">${t('table.select')}</option>` +
+    Array.from({length:20},(_,i)=>i+1).map(n=>`<option value="${n}">${n}</option>`).join('');
+  if(state.tableNum) tableSel.value = state.tableNum;
+
+  const hcSel = document.getElementById('headcountSelect');
+  hcSel.innerHTML = `<option value="">${t('headcount.select')}</option>` +
+    Array.from({length:10},(_,i)=>i+1).map(n=>`<option value="${n}">${n}${t('headcount.suffix')}</option>`).join('');
+  if(state.headcount) hcSel.value = state.headcount;
+}
+
+function setupCheckout(){
+  const noticeMap = { dinein:'checkout.dineinNotice', takeout:'checkout.takeoutNotice', delivery:'checkout.deliveryNotice' };
+  document.getElementById('orderTypeNotice').setAttribute('data-i18n', noticeMap[state.orderType]);
+  document.getElementById('deliveryFields').style.display = state.orderType==='delivery' ? 'block' : 'none';
+  document.getElementById('dineinFields').style.display = state.orderType==='dinein' ? 'block' : 'none';
+  document.getElementById('checkoutTotal').textContent = '$'+cartTotal();
+  if(state.orderType==='dinein'){
+    populateDineinSelects();
+    document.getElementById('minSpendStatus').style.display='none';
+    document.getElementById('guestCapNotice').style.display='none';
+  }
+  applyI18n();
+  updateSubmitState();
+}
+
+document.getElementById('tableSelect').addEventListener('change', (e)=>{ state.tableNum = e.target.value; updateSubmitState(); });
+document.getElementById('headcountSelect').addEventListener('change', (e)=>{ state.headcount = e.target.value; updateSubmitState(); });
+
+const demoStaffNames = ['林經理','陳店員','黃工讀生']; // mirrors staff.html roster for this demo
+
+document.getElementById('lineLoginBtn').addEventListener('click', ()=>{
+  const inputName = window.prompt('（模擬 LINE 登入）請輸入登入的 LINE 顯示名稱，留白則預設為「王小明」：');
+  const name = (inputName && inputName.trim()) ? inputName.trim() : '王小明';
+  const isStaff = demoStaffNames.includes(name);
+
+  state.loggedIn = true;
+  state.guestMode = false;
+  document.getElementById('loginOptions').style.display = 'none';
+  document.getElementById('loggedInLabel').innerHTML = `${t('checkout.loggedInAs')}：<b>${name}</b>`;
+  document.getElementById('loggedInNotice').style.display = 'block';
+  document.getElementById('customNameField').style.display = 'block';
+  document.getElementById('customPhoneField').style.display = 'block';
+  document.getElementById('assistOrderField').style.display = isStaff ? 'block' : 'none';
+  document.getElementById('assistOrderCheckbox').checked = false;
+  document.getElementById('customNameLabel').setAttribute('data-i18n','checkout.customName');
+  applyI18n();
+  updateSubmitState();
+});
+
+document.getElementById('assistOrderCheckbox').addEventListener('change', (e)=>{
+  const label = document.getElementById('customNameLabel');
+  if(e.target.checked){
+    label.setAttribute('data-i18n','checkout.assistCustomerName');
+    document.getElementById('customNameInput').setAttribute('data-i18n-placeholder','checkout.assistCustomerNamePlaceholder');
+  } else {
+    label.setAttribute('data-i18n','checkout.customName');
+    document.getElementById('customNameInput').setAttribute('data-i18n-placeholder','checkout.customNamePlaceholder');
+  }
+  applyI18n();
+});
+
+document.getElementById('guestLoginBtn').addEventListener('click', ()=>{
+  state.loggedIn = true;
+  state.guestMode = true;
+  document.getElementById('loginOptions').style.display = 'none';
+  document.getElementById('loggedInLabel').innerHTML = `${t('checkout.guestMode')} ✓`;
+  document.getElementById('loggedInNotice').style.display = 'block';
+  document.getElementById('loggedInNotice').insertAdjacentHTML('beforeend', `<div style="margin-top:6px;font-weight:400">${t('checkout.guestNotice')}</div>`);
+  document.getElementById('customNameField').style.display = 'block';
+  document.getElementById('customPhoneField').style.display = 'block';
+  updateSubmitState();
+});
+
+function updateSubmitState(){
+  let valid = state.loggedIn;
+
+  if(valid && state.orderType==='dinein'){
+    const tableVal = document.getElementById('tableSelect').value;
+    const headcountVal = parseInt(document.getElementById('headcountSelect').value) || 0;
+    const shortfallEl = document.getElementById('minSpendStatus');
+    const guestCapEl = document.getElementById('guestCapNotice');
+
+    if(!tableVal || !headcountVal){
+      valid = false;
+      shortfallEl.style.display='none';
+      guestCapEl.style.display='none';
+    } else {
+      const minTotal = headcountVal * minSpendPerHead();
+      const shortfall = minTotal - cartTotal();
+      if(shortfall > 0){
+        shortfallEl.style.display='block';
+        shortfallEl.textContent = `${t('minspend.shortfall')} $${shortfall}`;
+        valid = false;
+      } else {
+        shortfallEl.style.display='none';
+      }
+
+      if(state.guestMode){
+        const exceeded = cartCount() > headcountVal;
+        guestCapEl.style.display='block';
+        guestCapEl.style.borderLeftColor = exceeded ? 'var(--red)' : 'var(--green)';
+        guestCapEl.style.color = exceeded ? 'var(--red)' : 'var(--ink-soft)';
+        guestCapEl.textContent = exceeded ? t('guest.capExceeded') : `${t('guest.capNotice')} ${headcountVal}${t('headcount.suffix')}`;
+        if(exceeded) valid = false;
+      } else {
+        guestCapEl.style.display='none';
+      }
+    }
+  }
+
+  document.getElementById('submitOrderBtn').disabled = !valid;
+}
+
+document.getElementById('submitOrderBtn').addEventListener('click', ()=>{
+  if(!state.loggedIn) return;
+  buildTicket();
+  closeOverlay('checkoutOverlay');
+  openOverlay('ticketOverlay');
+});
+
+function pad(n){ return n<10 ? '0'+n : ''+n; }
+function buildTicket(){
+  const now = new Date();
+  const orderCode = `${pad(now.getMonth()+1)}${pad(now.getDate())}-${pad(Math.floor(Math.random()*90+10))}`;
+  const prefix = state.orderType==='delivery' ? 'D-' : '';
+  document.getElementById('ticketNumber').textContent = prefix + orderCode;
+
+  const typeLabel = t('orderType.'+state.orderType);
+  const isAssistOrderForTicket = document.getElementById('assistOrderField').style.display !== 'none'
+    && document.getElementById('assistOrderCheckbox').checked;
+  let typeText = state.orderType==='dinein' && state.tableNum
+    ? `${typeLabel} · ${state.tableNum}${state.lang==='zh'?'桌':state.lang==='ja'?'番':''}`
+    : typeLabel;
+  if(isAssistOrderForTicket) typeText += ' · ' + (state.lang==='zh'?'員工代點':state.lang==='ja'?'代理注文':state.lang==='ko'?'대리 주문':'Staff-assisted');
+  document.getElementById('ticketType').textContent = typeText;
+
+  document.getElementById('ticketBody').innerHTML = state.cart.map(c=>`
+    <div class="ticket-line">
+      <div>
+        ${bilingualNameOptsHtml(c, 'name', 'sub', true)}
+      </div>
+      <div class="price">$${c.price*c.qty}</div>
+    </div>
+  `).join('');
+  document.getElementById('ticketTotal').textContent = '$'+cartTotal();
+
+  /* persist to localStorage as "recent order" per earlier requirement */
+  const customName = document.getElementById('customNameInput').value.trim();
+  const customPhone = document.getElementById('customPhoneInput').value.trim();
+  const isAssistOrder = document.getElementById('assistOrderField').style.display !== 'none'
+    && document.getElementById('assistOrderCheckbox').checked;
+  const loggedInStaffName = isAssistOrder
+    ? document.getElementById('loggedInLabel').querySelector('b').textContent
+    : null;
+  localStorage.setItem('recentOrder', JSON.stringify({
+    code: prefix+orderCode, type: state.orderType, guest: !!state.guestMode,
+    customName: customName || null, customPhone: customPhone || null, lang: state.lang,
+    assistedBy: loggedInStaffName, // staff member who placed this order on the customer's behalf
+    items: state.cart, total: cartTotal(), time: now.toISOString()
+  }));
+  updateMyOrdersEntry();
+}
+
+document.getElementById('newOrderBtn').addEventListener('click', ()=>{
+  state.cart = [];
+  state.loggedIn = false;
+  state.guestMode = false;
+  document.getElementById('loginOptions').style.display = 'block';
+  document.getElementById('loggedInNotice').style.display = 'none';
+  document.getElementById('loggedInNotice').innerHTML = `<span id="loggedInLabel"><span data-i18n="checkout.loggedInAs">已登入</span>：<b>王小明</b></span>`;
+  document.getElementById('customNameField').style.display = 'none';
+  document.getElementById('customNameInput').value = '';
+  document.getElementById('customPhoneField').style.display = 'none';
+  document.getElementById('customPhoneInput').value = '';
+  document.getElementById('assistOrderField').style.display = 'none';
+  document.getElementById('assistOrderCheckbox').checked = false;
+  renderCartUI();
+  closeOverlay('ticketOverlay');
+});
+
+/* ---------------- Toast ---------------- */
 let toastTimer;
 function showToast(msg){
   const el = document.getElementById('toast');
   el.textContent = msg;
   el.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=> el.classList.remove('show'), 1800);
+  toastTimer = setTimeout(()=> el.classList.remove('show'), 1600);
 }
 
+/* ---------------- Order type pills ---------------- */
+document.getElementById('orderTypePills').querySelectorAll('.pill').forEach(p=>{
+  p.addEventListener('click', ()=>{
+    const newType = p.getAttribute('data-type');
+    if(newType === state.orderType) return;
+    document.querySelectorAll('#orderTypePills .pill').forEach(x=>x.classList.remove('active'));
+    p.classList.add('active');
+    state.orderType = newType;
+    if(state.cart.length > 0){
+      state.cart = [];
+      renderCartUI();
+      showToast(t('toast.orderTypeChanged'));
+    }
+    document.getElementById('tableBadge').classList.toggle('show', newType==='dinein' && state.tableNum);
+    renderMenu();
+    applyI18n();
+  });
+});
+
+/* ---------------- Language switch ---------------- */
+document.getElementById('langSwitch').querySelectorAll('.lang-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.lang-btn').forEach(x=>x.classList.remove('active'));
+    btn.classList.add('active');
+    state.lang = btn.getAttribute('data-lang');
+    renderCatTabs();
+    renderMenu();
+    renderCartUI();
+    applyI18n();
+  });
+});
+
 /* ---------------- Init ---------------- */
-renderList();
+if(state.tableNum){
+  // came in via ?table= link — force dinein pill active
+  document.querySelectorAll('#orderTypePills .pill').forEach(x=>x.classList.toggle('active', x.getAttribute('data-type')==='dinein'));
+}
+renderCatTabs();
+renderMenu();
+renderCartUI();
+applyI18n();
+
+/* ---------------- My Orders (status view for the customer) ---------------- */
+/* No live backend yet, so status is simulated from elapsed time since the order was placed.
+   Once GAS is connected this should poll the real order status instead. */
+function getMyOrderStatus(order){
+  const elapsedMin = (Date.now() - new Date(order.time).getTime()) / 60000;
+  if(order.simulatedPaid) return 'paid';
+  if(elapsedMin < 1) return 'new';
+  if(elapsedMin < 4) return 'making';
+  return 'served';
+}
+
+function renderMyOrders(){
+  const body = document.getElementById('myOrdersBody');
+  let saved;
+  try{ saved = JSON.parse(localStorage.getItem('recentOrder')); } catch(e){ saved = null; }
+
+  if(!saved){
+    body.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--ink-soft);font-size:13px;">${t('myorders.empty')}</div>`;
+    return;
+  }
+
+  const status = getMyOrderStatus(saved);
+  const steps = [
+    { key:'new', label: state.lang==='zh'?'接單':state.lang==='ja'?'受付':state.lang==='ko'?'접수':'Accepted' },
+    { key:'making', label: state.lang==='zh'?'製作中':state.lang==='ja'?'調理中':state.lang==='ko'?'제조 중':'Making' },
+    { key:'served', label: state.lang==='zh'?'已出餐':state.lang==='ja'?'完成':state.lang==='ko'?'완료':'Ready' },
+  ];
+  const order = ['new','making','served','paid'];
+  const currentIdx = order.indexOf(status);
+
+  const stepperHtml = steps.map((s)=>{
+    const stepIdx = order.indexOf(s.key);
+    const cls = stepIdx < currentIdx ? 'done' : stepIdx === currentIdx ? 'active' : '';
+    return `<div class="status-step ${cls}"><div class="status-line"></div><div class="dot"></div><div class="label">${s.label}</div></div>`;
+  }).join('');
+
+  const typeLabelText = t('orderType.'+saved.type);
+  const itemsHtml = (saved.items||[]).map(c=>`
+    <div class="myorder-item-line">
+      ${bilingualNameOptsHtml(c, 'myorder-item-name', 'myorder-item-opts', true)}
+      <div class="myorder-item-price num">$${c.price*c.qty}</div>
+    </div>
+  `).join('');
+
+  body.innerHTML = `
+    <div class="myorder-card">
+      <div class="myorder-code mono">${saved.code}</div>
+      <div class="myorder-type">${typeLabelText}${saved.guest?' · '+t('checkout.guestMode'):''}</div>
+      <div class="status-stepper">${stepperHtml}</div>
+      <div class="myorder-current-status">${t('myorders.status.'+status)}</div>
+    </div>
+    <div class="myorder-card" style="margin-top:12px;padding:14px 16px;">
+      ${itemsHtml}
+      <div class="myorder-item-total"><span>${t('cart.total')}</span><span class="num">$${saved.total}</span></div>
+    </div>
+    <div class="ticket-cash-notice" style="margin-top:14px;">${t('myorders.note')}</div>
+  `;
+}
+
+function updateMyOrdersEntry(){
+  let saved;
+  try{ saved = JSON.parse(localStorage.getItem('recentOrder')); } catch(e){ saved = null; }
+  const btn = document.getElementById('myOrdersBtn');
+  const dot = document.getElementById('myOrdersDot');
+  if(saved){
+    btn.style.display = 'flex';
+    const status = getMyOrderStatus(saved);
+    dot.style.display = status !== 'paid' ? 'inline-block' : 'none';
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
+document.getElementById('myOrdersBtn').addEventListener('click', ()=>{
+  renderMyOrders();
+  openOverlay('myOrdersOverlay');
+});
+updateMyOrdersEntry();
+setInterval(updateMyOrdersEntry, 15000);
+
+/* ---------------- Staff item-availability management ---------------- */
+document.getElementById('manageItemsBtn').addEventListener('click', ()=>{
+  if(state.manageMode){
+    state.manageMode = false;
+    document.getElementById('manageItemsBtn').textContent = '';
+    document.getElementById('manageItemsBtn').innerHTML = `🔧 <span data-i18n="manage.entry">品項管理（員工）</span>`;
+    renderMenu();
+    applyI18n();
+    return;
+  }
+  const code = window.prompt('請輸入員工代碼以進入品項管理（僅員工以上可操作）：');
+  if(code === null) return;
+  /* demo-only check — production should verify the logged-in LINE account's staff role via the backend */
+  if(!['1234','2345','3456','8888'].includes(code)){ alert('代碼錯誤'); return; }
+  state.manageMode = true;
+  document.getElementById('manageItemsBtn').innerHTML = `✓ <span data-i18n="manage.exit">完成設定</span>`;
+  renderMenu();
+  applyI18n();
+  showToast('品項管理模式：點選開關可切換「今日是否販售」');
+});
+
+/* Keep the category bar pinned exactly below the header, whatever the header's actual height is
+   (header height varies with table badge, order-type pills wrapping, etc.) */
+function adjustStickyOffset(){
+  const header = document.querySelector('header');
+  const catTabs = document.getElementById('catTabs');
+  if(header && catTabs) catTabs.style.top = header.offsetHeight + 'px';
+}
+adjustStickyOffset();
+window.addEventListener('resize', adjustStickyOffset);
+new ResizeObserver(adjustStickyOffset).observe(document.querySelector('header'));
 </script>
 </body>
 </html>
