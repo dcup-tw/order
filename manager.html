@@ -335,6 +335,7 @@
 </div>
 
 <script>
+let idleTimer; // declared early so showLockScreen() can safely clearTimeout() it during initial page load
 /* This page is read-only for order processing — accepting, preparing, and checking out
    orders happens on staff.html. Managers switch there to work the counter. */
 const ORDER_ACTIONS_ENABLED = false;
@@ -876,7 +877,6 @@ function updatePendingBadge(){
    Locking does NOT remove anyone from deviceLoggedInList — it just clears the active session
    and shows the quick-switch list so any already-logged-in person can unlock with their PIN. */
 const IDLE_LIMIT_MS = 5 * 60 * 1000;
-let idleTimer;
 function lockScreen(reason){
   if(!currentStaff) return;
   showToastSafe(reason || '畫面已鎖定');
