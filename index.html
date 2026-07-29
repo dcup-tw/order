@@ -82,6 +82,51 @@
     display:none; align-items:center; gap:5px;
   }
   .table-badge.show{ display:inline-flex; }
+
+  .utility-row{ display:flex; gap:8px; padding:10px 0 12px; }
+  .utility-btn{
+    font-size:11px; padding:6px 11px; background: rgba(237,227,204,0.08); color: rgba(237,227,204,0.75);
+    border:1px solid rgba(237,227,204,0.2); border-radius:20px; cursor:pointer; display:flex; align-items:center; gap:4px;
+    position:relative;
+  }
+  .my-orders-dot{
+    width:7px; height:7px; border-radius:50%; background:var(--red); display:inline-block; margin-left:2px;
+  }
+
+  .item-toggle{
+    width:40px; height:22px; border-radius:11px; background:#DCEAE3; position:relative; cursor:pointer; flex-shrink:0;
+    border:none; padding:0;
+  }
+  .item-toggle.off{ background: var(--line); }
+  .item-toggle::after{
+    content:''; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%;
+    background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.2); transition: left .15s ease;
+  }
+  .item-toggle.off::after{ left:20px; }
+
+  .item-card.sold-out{ opacity:0.55; }
+  .sold-out-tag{
+    font-family:'Barlow Condensed', sans-serif; font-weight:700; font-size:15px; color:var(--ink-soft); flex-shrink:0;
+  }
+
+  .myorder-card{ background:#fff; border-radius:6px; padding:16px; box-shadow:0 2px 10px rgba(42,36,32,0.08); }
+  .myorder-code{ font-family:'Space Mono', monospace; font-size:20px; font-weight:700; color:var(--brown-deep); }
+  .myorder-type{ font-size:12px; color:var(--ink-soft); margin-top:2px; }
+  .status-stepper{ display:flex; align-items:center; margin:18px 0 14px; }
+  .status-step{ flex:1; text-align:center; position:relative; }
+  .status-step .dot{
+    width:14px; height:14px; border-radius:50%; background:var(--line); margin:0 auto 6px; position:relative; z-index:2;
+  }
+  .status-step.done .dot{ background: var(--green); }
+  .status-step.active .dot{ background: var(--red); box-shadow:0 0 0 4px rgba(193,57,31,0.15); }
+  .status-step .label{ font-size:10.5px; color:var(--ink-soft); }
+  .status-step.done .label, .status-step.active .label{ color:var(--ink); font-weight:600; }
+  .status-line{
+    position:absolute; top:7px; left:-50%; width:100%; height:2px; background:var(--line); z-index:1;
+  }
+  .status-step.done .status-line{ background: var(--green); }
+  .status-step:first-child .status-line{ display:none; }
+  .myorder-current-status{ text-align:center; font-size:13px; font-weight:600; margin-bottom:4px; }
   .table-input-row{ display:none; align-items:center; gap:6px; }
   .table-input-row.show{ display:flex; }
   .table-input-row input{
@@ -98,7 +143,7 @@
   .cat-tabs{
     display:flex; gap:6px; overflow-x:auto; padding: 12px 14px;
     background: var(--paper-dark); border-bottom:1px solid var(--line);
-    position: sticky; top:78px; z-index:29;
+    position: sticky; z-index:29;
     scrollbar-width:none;
   }
   .cat-tabs::-webkit-scrollbar{ display:none; }
@@ -313,6 +358,10 @@
       </div>
       <div class="table-badge" id="tableBadge">🪑 <span id="tableNum">5</span> <span data-i18n="table.suffix">桌</span></div>
     </div>
+    <div class="utility-row">
+      <button class="utility-btn" id="manageItemsBtn">🔧 <span data-i18n="manage.entry">品項管理（員工）</span></button>
+      <button class="utility-btn" id="myOrdersBtn" style="display:none;">📋 <span data-i18n="myorders.entry">我的訂單</span><span class="my-orders-dot" id="myOrdersDot" style="display:none;"></span></button>
+    </div>
   </header>
 
   <!-- CATEGORY TABS -->
@@ -448,8 +497,15 @@
         </div>
 
         <div class="field" id="customNameField" style="display:none">
-          <label class="field-label" data-i18n="checkout.customName">自訂名稱（選填，用於現場叫號／稱呼）</label>
+          <label class="field-label" id="customNameLabel" data-i18n="checkout.customName">自訂名稱（選填，用於現場叫號／稱呼）</label>
           <input type="text" id="customNameInput" data-i18n-placeholder="checkout.customNamePlaceholder" placeholder="例如：Tom、佳佳">
+        </div>
+
+        <div class="field" id="assistOrderField" style="display:none">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;color:var(--ink);">
+            <input type="checkbox" id="assistOrderCheckbox" style="width:16px;height:16px;">
+            <span data-i18n="checkout.assistMode">偵測到員工帳號，是否為代客點餐？</span>
+          </label>
         </div>
 
         <div class="total-row" style="margin-top:4px">
@@ -491,6 +547,18 @@
     </div>
   </div>
 
+  <!-- MY ORDERS -->
+  <div class="overlay" id="myOrdersOverlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div class="sheet-title" data-i18n="myorders.title">我的訂單</div>
+        <button class="sheet-close" data-close="myOrdersOverlay">✕</button>
+      </div>
+      <div class="sheet-body" id="myOrdersBody"></div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -514,11 +582,19 @@ const i18nStrings = {
     'checkout.loggedInAs':'已登入',
     'checkout.customName':'自訂名稱（選填，用於現場叫號／稱呼）',
     'checkout.customNamePlaceholder':'例如：Tom、佳佳',
+    'checkout.assistMode':'偵測到員工帳號，是否為代客點餐？',
+    'checkout.assistCustomerName':'代點顧客姓名',
+    'checkout.assistCustomerNamePlaceholder':'請輸入顧客姓名',
     'checkout.cashOnly':'僅接受現金支付，請於取餐時至櫃台結帳。',
     'checkout.submit':'送出訂單',
     'ticket.pickupNumber':'取餐編號','ticket.cashNotice':'請保留此畫面，至櫃台出示編號並以現金結帳',
     'ticket.stubNote':'此編號已儲存在您的手機，可隨時於下方「我的訂單」查看目前製作進度。',
     'ticket.newOrder':'繼續點餐',
+    'manage.entry':'品項管理（員工）','manage.exit':'完成設定','menu.soldOut':'售完',
+    'myorders.entry':'我的訂單','myorders.title':'我的訂單','myorders.empty':'目前沒有進行中的訂單',
+    'myorders.status.new':'已送出，等待店家接單','myorders.status.making':'製作中',
+    'myorders.status.served':'已出餐，請至櫃台結帳','myorders.status.paid':'已結帳完成',
+    'myorders.note':'狀態每隔一段時間會自動更新，實際上線後會依店家後台即時狀態顯示',
     'headcount.label':'用餐人數','table.label':'桌次','table.select':'請選擇桌次',
     'headcount.select':'請選擇人數','headcount.suffix':'人',
     'minspend.notice':'低消提醒：假日每人低消 $70，平日每人低消 $50',
@@ -544,11 +620,19 @@ const i18nStrings = {
     'checkout.loggedInAs':'로그인됨',
     'checkout.customName':'닉네임 (선택, 매장 호출용)',
     'checkout.customNamePlaceholder':'예: Tom, 지민',
+    'checkout.assistMode':'직원 계정이 감지되었습니다. 대리 주문입니까?',
+    'checkout.assistCustomerName':'대리 주문 고객 이름',
+    'checkout.assistCustomerNamePlaceholder':'고객 이름을 입력하세요',
     'checkout.cashOnly':'현금 결제만 가능합니다. 수령 시 카운터에서 결제해주세요.',
     'checkout.submit':'주문 보내기',
     'ticket.pickupNumber':'대기번호','ticket.cashNotice':'이 화면을 저장하고 카운터에서 번호를 보여주며 결제해주세요',
     'ticket.stubNote':'이 번호는 휴대폰에 저장되어 있으며 언제든지 진행 상황을 확인할 수 있습니다.',
     'ticket.newOrder':'추가 주문',
+    'manage.entry':'품목 관리（직원용）','manage.exit':'설정 완료','menu.soldOut':'품절',
+    'myorders.entry':'내 주문','myorders.title':'내 주문','myorders.empty':'진행 중인 주문이 없습니다',
+    'myorders.status.new':'접수 대기 중','myorders.status.making':'제조 중',
+    'myorders.status.served':'제조 완료, 카운터에서 결제해주세요','myorders.status.paid':'결제 완료',
+    'myorders.note':'상태는 시간이 지나면 자동으로 갱신됩니다（실제 서비스에서는 매장 시스템과 실시간 연동됩니다）',
     'headcount.label':'인원 수','table.label':'테이블','table.select':'테이블 선택',
     'headcount.select':'인원 선택','headcount.suffix':'명',
     'minspend.notice':'최소 소비 안내: 주말/공휴일 1인당 $70, 평일 1인당 $50',
@@ -574,11 +658,19 @@ const i18nStrings = {
     'checkout.loggedInAs':'Signed in as',
     'checkout.customName':'Preferred name (optional, used for calling your order)',
     'checkout.customNamePlaceholder':'e.g. Tom, Amy',
+    'checkout.assistMode':'Staff account detected — placing this order for a customer?',
+    'checkout.assistCustomerName':"Customer's name",
+    'checkout.assistCustomerNamePlaceholder':"Enter the customer's name",
     'checkout.cashOnly':'Cash only. Please pay at the counter when picking up.',
     'checkout.submit':'Place order',
     'ticket.pickupNumber':'Pickup number','ticket.cashNotice':'Keep this screen and show your number at the counter to pay',
     'ticket.stubNote':'This number is saved on your phone. Check order progress anytime below.',
     'ticket.newOrder':'Order more',
+    'manage.entry':'Item management (staff)','manage.exit':'Done','menu.soldOut':'Sold out',
+    'myorders.entry':'My orders','myorders.title':'My orders','myorders.empty':'No active orders right now',
+    'myorders.status.new':'Sent, waiting for the shop to accept','myorders.status.making':'Being prepared',
+    'myorders.status.served':'Ready — please pay at the counter','myorders.status.paid':'Paid',
+    'myorders.note':'Status updates automatically over time in this demo; a live system would reflect the shop\'s real-time status.',
     'headcount.label':'Party size','table.label':'Table','table.select':'Select table',
     'headcount.select':'Select party size','headcount.suffix':' people',
     'minspend.notice':'Minimum spend: $70/person on weekends, $50/person on weekdays',
@@ -604,11 +696,19 @@ const i18nStrings = {
     'checkout.loggedInAs':'ログイン中',
     'checkout.customName':'呼び名（任意、店内でのお呼び出しに使用）',
     'checkout.customNamePlaceholder':'例：Tom、さくら',
+    'checkout.assistMode':'スタッフアカウントを検出しました。代理注文しますか？',
+    'checkout.assistCustomerName':'代理注文するお客様のお名前',
+    'checkout.assistCustomerNamePlaceholder':'お客様のお名前を入力してください',
     'checkout.cashOnly':'現金のみのお支払いです。お受け取り時にカウンターでお支払いください。',
     'checkout.submit':'注文を送信',
     'ticket.pickupNumber':'受取番号','ticket.cashNotice':'この画面を保存し、カウンターで番号を提示してお支払いください',
     'ticket.stubNote':'この番号はスマートフォンに保存されています。下記からいつでも進捗を確認できます。',
     'ticket.newOrder':'もっと注文する',
+    'manage.entry':'品目管理（スタッフ用）','manage.exit':'設定完了','menu.soldOut':'売り切れ',
+    'myorders.entry':'注文状況','myorders.title':'注文状況','myorders.empty':'進行中の注文はありません',
+    'myorders.status.new':'送信済み、店舗の受付待ち','myorders.status.making':'調理中',
+    'myorders.status.served':'完成、カウンターでお支払いください','myorders.status.paid':'支払い完了',
+    'myorders.note':'このデモでは時間経過で自動更新されます。実際は店舗システムとリアルタイム連携します。',
     'headcount.label':'人数','table.label':'テーブル','table.select':'テーブルを選択',
     'headcount.select':'人数を選択','headcount.suffix':'名',
     'minspend.notice':'最低消費のご案内：休日は お一人様$70、平日は お一人様$50',
@@ -701,7 +801,25 @@ let state = {
   currentSweet: 0,
   currentIce: 0,
   currentQty: 1,
+  manageMode: false,
 };
+
+/* ---------------- ITEM AVAILABILITY (staff "today sold out" toggle) ---------------- */
+/* Persisted per-day in localStorage so it naturally resets the next day. */
+function todayKey(){
+  const d = new Date();
+  return `soldout-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+}
+function loadSoldOut(){
+  try{
+    const raw = localStorage.getItem(todayKey());
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch(e){ return new Set(); }
+}
+function saveSoldOut(){
+  try{ localStorage.setItem(todayKey(), JSON.stringify([...soldOutItems])); } catch(e){}
+}
+let soldOutItems = loadSoldOut();
 
 /* read ?table= param */
 const params = new URLSearchParams(window.location.search);
@@ -771,8 +889,18 @@ function renderMenu(){
           <div class="en">${c.en}</div>
         </div>
         <div class="item-list">
-          ${catItems.map(it=>`
-            <div class="item-card" data-item="${it.id}">
+          ${catItems.map(it=>{
+            const isSoldOut = soldOutItems.has(it.id);
+            let rightHtml;
+            if(state.manageMode){
+              rightHtml = `<button class="item-toggle ${isSoldOut?'off':''}" data-item="${it.id}" data-toggle="1"></button>`;
+            } else if(isSoldOut){
+              rightHtml = `<span class="sold-out-tag" data-i18n="menu.soldOut">售完</span>`;
+            } else {
+              rightHtml = `<div class="item-price num">${displayPriceRange(it)}</div><button class="item-add" data-item="${it.id}">+</button>`;
+            }
+            return `
+            <div class="item-card ${isSoldOut && !state.manageMode ? 'sold-out':''}" data-item="${it.id}">
               <div class="item-main">
                 <div class="item-name-row">
                   <div class="item-name">${itemLabel(it)}</div>
@@ -782,16 +910,27 @@ function renderMenu(){
                 </div>
                 <div class="item-en">${itemSubLabel(it)}</div>
               </div>
-              <div class="item-price num">${displayPriceRange(it)}</div>
-              <button class="item-add" data-item="${it.id}">+</button>
+              ${rightHtml}
             </div>
-          `).join('')}
+          `;}).join('')}
         </div>
       </div>
     `;
   }).join('');
 
-  wrap.querySelectorAll('.item-card, .item-add').forEach(el=>{
+  if(state.manageMode){
+    wrap.querySelectorAll('[data-toggle]').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const id = el.getAttribute('data-item');
+        if(soldOutItems.has(id)) soldOutItems.delete(id); else soldOutItems.add(id);
+        saveSoldOut();
+        renderMenu();
+      });
+    });
+    return;
+  }
+
+  wrap.querySelectorAll('.item-card:not(.sold-out), .item-add').forEach(el=>{
     el.addEventListener('click', (e)=>{
       const id = el.getAttribute('data-item');
       openItemSheet(id);
@@ -999,14 +1138,36 @@ function setupCheckout(){
 document.getElementById('tableSelect').addEventListener('change', (e)=>{ state.tableNum = e.target.value; updateSubmitState(); });
 document.getElementById('headcountSelect').addEventListener('change', (e)=>{ state.headcount = e.target.value; updateSubmitState(); });
 
+const demoStaffNames = ['林經理','陳店員','黃工讀生']; // mirrors staff.html roster for this demo
+
 document.getElementById('lineLoginBtn').addEventListener('click', ()=>{
+  const inputName = window.prompt('（模擬 LINE 登入）請輸入登入的 LINE 顯示名稱，留白則預設為「王小明」：');
+  const name = (inputName && inputName.trim()) ? inputName.trim() : '王小明';
+  const isStaff = demoStaffNames.includes(name);
+
   state.loggedIn = true;
   state.guestMode = false;
   document.getElementById('loginOptions').style.display = 'none';
-  document.getElementById('loggedInLabel').innerHTML = `${t('checkout.loggedInAs')}：<b>王小明</b>`;
+  document.getElementById('loggedInLabel').innerHTML = `${t('checkout.loggedInAs')}：<b>${name}</b>`;
   document.getElementById('loggedInNotice').style.display = 'block';
   document.getElementById('customNameField').style.display = 'block';
+  document.getElementById('assistOrderField').style.display = isStaff ? 'block' : 'none';
+  document.getElementById('assistOrderCheckbox').checked = false;
+  document.getElementById('customNameLabel').setAttribute('data-i18n','checkout.customName');
+  applyI18n();
   updateSubmitState();
+});
+
+document.getElementById('assistOrderCheckbox').addEventListener('change', (e)=>{
+  const label = document.getElementById('customNameLabel');
+  if(e.target.checked){
+    label.setAttribute('data-i18n','checkout.assistCustomerName');
+    document.getElementById('customNameInput').setAttribute('data-i18n-placeholder','checkout.assistCustomerNamePlaceholder');
+  } else {
+    label.setAttribute('data-i18n','checkout.customName');
+    document.getElementById('customNameInput').setAttribute('data-i18n-placeholder','checkout.customNamePlaceholder');
+  }
+  applyI18n();
 });
 
 document.getElementById('guestLoginBtn').addEventListener('click', ()=>{
@@ -1075,9 +1236,12 @@ function buildTicket(){
   document.getElementById('ticketNumber').textContent = prefix + orderCode;
 
   const typeLabel = t('orderType.'+state.orderType);
-  const typeText = state.orderType==='dinein' && state.tableNum
+  const isAssistOrderForTicket = document.getElementById('assistOrderField').style.display !== 'none'
+    && document.getElementById('assistOrderCheckbox').checked;
+  let typeText = state.orderType==='dinein' && state.tableNum
     ? `${typeLabel} · ${state.tableNum}${state.lang==='zh'?'桌':state.lang==='ja'?'番':''}`
     : typeLabel;
+  if(isAssistOrderForTicket) typeText += ' · ' + (state.lang==='zh'?'員工代點':state.lang==='ja'?'代理注文':state.lang==='ko'?'대리 주문':'Staff-assisted');
   document.getElementById('ticketType').textContent = typeText;
 
   document.getElementById('ticketBody').innerHTML = state.cart.map(c=>`
@@ -1093,11 +1257,18 @@ function buildTicket(){
 
   /* persist to localStorage as "recent order" per earlier requirement */
   const customName = document.getElementById('customNameInput').value.trim();
+  const isAssistOrder = document.getElementById('assistOrderField').style.display !== 'none'
+    && document.getElementById('assistOrderCheckbox').checked;
+  const loggedInStaffName = isAssistOrder
+    ? document.getElementById('loggedInLabel').querySelector('b').textContent
+    : null;
   localStorage.setItem('recentOrder', JSON.stringify({
     code: prefix+orderCode, type: state.orderType, guest: !!state.guestMode,
     customName: customName || null, lang: state.lang,
+    assistedBy: loggedInStaffName, // staff member who placed this order on the customer's behalf
     items: state.cart, total: cartTotal(), time: now.toISOString()
   }));
+  updateMyOrdersEntry();
 }
 
 document.getElementById('newOrderBtn').addEventListener('click', ()=>{
@@ -1109,6 +1280,8 @@ document.getElementById('newOrderBtn').addEventListener('click', ()=>{
   document.getElementById('loggedInNotice').innerHTML = `<span id="loggedInLabel"><span data-i18n="checkout.loggedInAs">已登入</span>：<b>王小明</b></span>`;
   document.getElementById('customNameField').style.display = 'none';
   document.getElementById('customNameInput').value = '';
+  document.getElementById('assistOrderField').style.display = 'none';
+  document.getElementById('assistOrderCheckbox').checked = false;
   renderCartUI();
   closeOverlay('ticketOverlay');
 });
@@ -1164,6 +1337,107 @@ renderCatTabs();
 renderMenu();
 renderCartUI();
 applyI18n();
+
+/* ---------------- My Orders (status view for the customer) ---------------- */
+/* No live backend yet, so status is simulated from elapsed time since the order was placed.
+   Once GAS is connected this should poll the real order status instead. */
+function getMyOrderStatus(order){
+  const elapsedMin = (Date.now() - new Date(order.time).getTime()) / 60000;
+  if(order.simulatedPaid) return 'paid';
+  if(elapsedMin < 1) return 'new';
+  if(elapsedMin < 4) return 'making';
+  return 'served';
+}
+
+function renderMyOrders(){
+  const body = document.getElementById('myOrdersBody');
+  let saved;
+  try{ saved = JSON.parse(localStorage.getItem('recentOrder')); } catch(e){ saved = null; }
+
+  if(!saved){
+    body.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--ink-soft);font-size:13px;">${t('myorders.empty')}</div>`;
+    return;
+  }
+
+  const status = getMyOrderStatus(saved);
+  const steps = [
+    { key:'new', label: state.lang==='zh'?'接單':state.lang==='ja'?'受付':state.lang==='ko'?'접수':'Accepted' },
+    { key:'making', label: state.lang==='zh'?'製作中':state.lang==='ja'?'調理中':state.lang==='ko'?'제조 중':'Making' },
+    { key:'served', label: state.lang==='zh'?'已出餐':state.lang==='ja'?'完成':state.lang==='ko'?'완료':'Ready' },
+  ];
+  const order = ['new','making','served','paid'];
+  const currentIdx = order.indexOf(status);
+
+  const stepperHtml = steps.map((s)=>{
+    const stepIdx = order.indexOf(s.key);
+    const cls = stepIdx < currentIdx ? 'done' : stepIdx === currentIdx ? 'active' : '';
+    return `<div class="status-step ${cls}"><div class="status-line"></div><div class="dot"></div><div class="label">${s.label}</div></div>`;
+  }).join('');
+
+  const typeLabelText = t('orderType.'+saved.type);
+  body.innerHTML = `
+    <div class="myorder-card">
+      <div class="myorder-code mono">${saved.code}</div>
+      <div class="myorder-type">${typeLabelText}${saved.guest?' · '+t('checkout.guestMode'):''}</div>
+      <div class="status-stepper">${stepperHtml}</div>
+      <div class="myorder-current-status">${t('myorders.status.'+status)}</div>
+    </div>
+    <div class="ticket-cash-notice" style="margin-top:14px;">${t('myorders.note')}</div>
+  `;
+}
+
+function updateMyOrdersEntry(){
+  let saved;
+  try{ saved = JSON.parse(localStorage.getItem('recentOrder')); } catch(e){ saved = null; }
+  const btn = document.getElementById('myOrdersBtn');
+  const dot = document.getElementById('myOrdersDot');
+  if(saved){
+    btn.style.display = 'flex';
+    const status = getMyOrderStatus(saved);
+    dot.style.display = status !== 'paid' ? 'inline-block' : 'none';
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
+document.getElementById('myOrdersBtn').addEventListener('click', ()=>{
+  renderMyOrders();
+  openOverlay('myOrdersOverlay');
+});
+updateMyOrdersEntry();
+setInterval(updateMyOrdersEntry, 15000);
+
+/* ---------------- Staff item-availability management ---------------- */
+document.getElementById('manageItemsBtn').addEventListener('click', ()=>{
+  if(state.manageMode){
+    state.manageMode = false;
+    document.getElementById('manageItemsBtn').textContent = '';
+    document.getElementById('manageItemsBtn').innerHTML = `🔧 <span data-i18n="manage.entry">品項管理（員工）</span>`;
+    renderMenu();
+    applyI18n();
+    return;
+  }
+  const code = window.prompt('請輸入員工代碼以進入品項管理（僅員工以上可操作）：');
+  if(code === null) return;
+  /* demo-only check — production should verify the logged-in LINE account's staff role via the backend */
+  if(!['1234','2345','3456','8888'].includes(code)){ alert('代碼錯誤'); return; }
+  state.manageMode = true;
+  document.getElementById('manageItemsBtn').innerHTML = `✓ <span data-i18n="manage.exit">完成設定</span>`;
+  renderMenu();
+  applyI18n();
+  showToast('品項管理模式：點選開關可切換「今日是否販售」');
+});
+
+/* Keep the category bar pinned exactly below the header, whatever the header's actual height is
+   (header height varies with table badge, order-type pills wrapping, etc.) */
+function adjustStickyOffset(){
+  const header = document.querySelector('header');
+  const catTabs = document.getElementById('catTabs');
+  if(header && catTabs) catTabs.style.top = header.offsetHeight + 'px';
+}
+adjustStickyOffset();
+window.addEventListener('resize', adjustStickyOffset);
+new ResizeObserver(adjustStickyOffset).observe(document.querySelector('header'));
 </script>
 </body>
 </html>
